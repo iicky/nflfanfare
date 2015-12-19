@@ -62,115 +62,39 @@ class Twitter:
     def in_db(self, tweetid):
         ''' Returns true if tweet is in database
         '''
-        query = """SELECT EXISTS(SELECT 1 FROM tweets WHERE tweetid =\"%s\" LIMIT 1);""" % (
-            tweetid)
-        result = ff.db.engine.execute(query)
-        indb = list(result)[0][0]
-
-        if indb == 1:
-            return True
-        return False
-
-    def query(self, tweet, teamid, verbose=False):
-        ''' Adds a tweet object to the database
-        '''
-        query = """ INSERT INTO `tweets`
-                                (`tweetid`,
-                                `teamid`,
-                                `userid`,
-                                `username`,
-                                `realname`,
-                                `userlocation`,
-                                `usertimezone`,
-                                `userprofileimg`,
-                                `tweettext`,
-                                `language`,
-                                `hashtags`,
-                                `usermentions`,
-                                `postedtime`,
-                                `collectedtime`,
-                                `sent_pos`,
-                                `sent_neg`,
-                                `sent_neu`,
-                                `sent_compound`)
-                        VALUES
-                                ('%s', '%s', '%s', '%s', '%s',
-                                 '%s', '%s', '%s', '%s', '%s',
-                                 '%s', '%s', '%s', '%s', '%s',
-                                 '%s', '%s', '%s');
-                        """ % (tweet.tweetid,
-                               teamid,
-                               tweet.userid,
-                               tweet.username,
-                               tweet.realname,
-                               tweet.userlocation,
-                               tweet.usertimezone,
-                               tweet.userprofileimg,
-                               tweet.tweettext,
-                               tweet.language,
-                               tweet.hashtags,
-                               tweet.usermentions,
-                               tweet.postedtime,
-                               tweet.collectedtime,
-                               tweet.sent_pos,
-                               tweet.sent_neg,
-                               tweet.sent_neu,
-                               tweet.sent_compound)
-
-        return query
+        result = ff.db.tweets.query.filter_by(tweetid=tweetid)
+        return ff.db.session.query(result.exists()).scalar()
 
     def add_to_db(self, tweet, teamid, verbose=False):
         ''' Adds a tweet object to the database
         '''
-        query = """ INSERT INTO `tweets`
-                                (`tweetid`,
-                                `teamid`,
-                                `userid`,
-                                `username`,
-                                `realname`,
-                                `userlocation`,
-                                `usertimezone`,
-                                `userprofileimg`,
-                                `tweettext`,
-                                `language`,
-                                `hashtags`,
-                                `usermentions`,
-                                `postedtime`,
-                                `collectedtime`,
-                                `sent_pos`,
-                                `sent_neg`,
-                                `sent_neu`,
-                                `sent_compound`)
-                        VALUES
-                                ('%s', '%s', '%s', '%s', '%s',
-                                 '%s', '%s', '%s', '%s', '%s',
-                                 '%s', '%s', '%s', '%s', '%s',
-                                 '%s', '%s', '%s');
-                        """ % (tweet.tweetid,
-                               teamid,
-                               tweet.userid,
-                               tweet.username,
-                               tweet.realname,
-                               tweet.userlocation,
-                               tweet.usertimezone,
-                               tweet.userprofileimg,
-                               tweet.tweettext,
-                               tweet.language,
-                               tweet.hashtags,
-                               tweet.usermentions,
-                               tweet.postedtime,
-                               tweet.collectedtime,
-                               tweet.sent_pos,
-                               tweet.sent_neg,
-                               tweet.sent_neu,
-                               tweet.sent_compound)
+        query = ff.db.tweets(tweetid=tweet.tweetid,
+                             teamid=teamid,
+                             userid=tweet.userid,
+                             username=tweet.username,
+                             realname=tweet.realname,
+                             userlocation=tweet.userlocation,
+                             usertimezone=tweet.usertimezone,
+                             userprofileimg=tweet.userprofileimg,
+                             tweettext=tweet.tweettext,
+                             language=tweet.language,
+                             hashtags=tweet.hashtags,
+                             usermentions=tweet.usermentions,
+                             postedtime=tweet.postedtime,
+                             collectedtime=tweet.collectedtime,
+                             sent_pos=tweet.sent_pos,
+                             sent_neg=tweet.sent_neg,
+                             sent_neu=tweet.sent_neu,
+                             sent_compound=tweet.sent_compound)
 
         try:
             if not self.in_db(tweet.tweetid):
                 if verbose == True:
                     print "Adding %s: %s to database for %s." % (tweet.username, tweet.tweettext, teamid)
 
-                ff.db.engine.execute(query)
+                ff.db.session.add(query)
+                ff.db.session.commit()
+
             else:
                 if verbose == True:
                     print "Tweet %s is already in the database." % tweet.tweetid
@@ -178,7 +102,6 @@ class Twitter:
             if verbose == True:
                 print "Could not add %s to database." % (tweet.tweetid)
                 print "Error:", sys.exc_info()
-        print
 
     def search_historic(self, search, start, end, live=True):
         ''' Finds historic tweets and adds them to the database
@@ -210,7 +133,7 @@ class Twitter:
         i = 1
         while True:
 
-            print "Scraping page %s... %s" % (i, url)
+            print "Scraping page %s for %s..." % (i, urllib2.unquote(search))
 
             # Get the source code for page
             html = browser.page_source.encode("utf-8")
