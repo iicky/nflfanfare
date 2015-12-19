@@ -316,12 +316,13 @@ class Schedule:
         except:
             print "Could not add %s to database" % row['gameid']
             print "Error:", sys.exc_info()
+            ff.db.session.rollback()
 
     def add_pfr_info(self, gameid, info):
         ''' Adds Pro-Football Reference info to database
         '''
         table = ff.db.session.query(ff.db.schedule).get(gameid)
-        
+
         table.starttime = info['starttime'] if info.has_key(
             'starttime') else None
         table.endtime = info['endtime'] if info.has_key('endtime') else None
@@ -338,8 +339,9 @@ class Schedule:
         try:
             ff.db.session.commit()
         except:
-            print "Could not update %s PFR info." % row['gameid']
+            print "Could not update %s PFR info." % gameid
             print "Error:", sys.exc_info()
+            ff.db.session.rollback()
 
     def update_db(self):
         ''' Updates schedule table of database
@@ -356,7 +358,7 @@ class Schedule:
             # Update game with PFR info
             if not self.is_complete(row['gameid']):
                 info = self.pfr_game_info(row['boxscore'])
-                if not info == {}:
+                if info.has_key('endtime'):
                     self.add_pfr_info(row['gameid'], info)
 
         for i, row in pdf.iterrows():
@@ -364,8 +366,9 @@ class Schedule:
             if not self.in_db(row['gameid']):
                 self.add_game(row)
 
-    def gameid(self, gameid):
+    def game_info(self, gameid):
         ''' Returns info for game id
         '''
 
-        query = """SELECT * FROM `schedule` WHERE `gameid`='%s'""" % gameid
+        result = ff.db.schedule.query.filter_by(gameid=gameid).one()
+        return result.__dict__
