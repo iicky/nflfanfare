@@ -369,6 +369,26 @@ class Schedule:
     def game_info(self, gameid):
         ''' Returns info for game id
         '''
-
         result = ff.db.schedule.query.filter_by(gameid=gameid).one()
         return result.__dict__
+
+    def completed_games(self):
+        ''' Returns dataframe of completed games
+        '''
+        df = pd.read_sql_table('schedule', ff.db.engine)
+        df = df[pd.notnull(df.endtime)]
+        return df if not df.empty else None
+
+    def pending_games(self):
+        ''' Returns dataframe of pending games
+        '''
+        df = pd.read_sql_table('schedule', ff.db.engine)
+        df = df[pd.isnull(df.endtime)]
+        return df if not df.empty else None
+
+    def pre_post_times(self, starttime):
+        ''' Returns timedelta of pregame and postgame times
+        '''
+        pregame = starttime - timedelta(hours=1)
+        postgame = starttime + timedelta(hours=4)
+        return (pregame, postgame)
