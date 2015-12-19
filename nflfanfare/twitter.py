@@ -1,12 +1,14 @@
 from bs4 import BeautifulSoup
-from datetime import datetime
+from datetime import datetime, timedelta
+import json
 import numpy as np
 import os
+import re
 import secrets as sec
 from selenium import webdriver
 import sys
 import time
-from TwitterAPI import TwitterAPI
+from TwitterAPI import TwitterAPI, TwitterRestPager
 import urllib2
 
 import nflfanfare as ff
@@ -22,12 +24,23 @@ class Twitter:
         self.twi = TwitterAPI(
             sec.twitter_ckey, sec.twitter_csec, auth_type='oAuth2')
 
-    def search(self, searchterm):
+    def quota(self, request):
+        ''' Returns quota information for API request
+        '''
+        result = self.twi.request('application/rate_limit_status')
+        resources = json.loads(result.response._content)['resources']
+
+        base = re.split('/', request)[1]
+        quota = resources[base][request]
+
+        return quota
+
+    def search(self, search):
         ''' Searches for term and returns tweets
             Waits if API quota has been met
         '''
         result = self.twi.request(
-            'search/tweets', {'q': searchterm, 'lang': 'en', 'count': 100})
+            'search/tweets', {'q': search, 'lang': 'en', 'count': 100})
         remaining = int(result.response.headers['x-rate-limit-remaining'])
         reset = float(result.response.headers['x-rate-limit-reset'])
 
@@ -104,7 +117,7 @@ class Twitter:
                 print "Error:", sys.exc_info()
                 ff.db.session.rollback()
 
-    def search_historic(self, search, start, end, live=True):
+    def search_historic(self, search, start, end, live=True, verbose=False):
         ''' Finds historic tweets and adds them to the database
         '''
         # Get NFL teamid from hashtag
@@ -152,7 +165,7 @@ class Twitter:
                     for response in responses:
                         tweet = ff.tweet.Tweet(response)
                         if not tweet.retweeted:
-                            self.add_to_db(tweet, team, verbose=True)
+                            self.add_to_db(tweet, team, verbose=verbose)
                 except:
                     pass
 
@@ -171,7 +184,54 @@ class Twitter:
 
         browser.quit()
 
+    def search_recent(self, search, start, end, verbose=False):
+        ''' Pages through search API for tweets under 7 days old
+        '''
+        endstamp = str(int(time.mktime(end.timetuple())))
+
+        # Get NFL teamid from hashtag
+        team = ff.team.teamid_from_hashtag(search)
+        search = '#'+search
+
+        result = TwitterRestPager(
+            self.twi, 'search/tweets', {'q': search, 'lang': 'en', 'count': 100, 'until': endstamp})
+        quota = self.quota('/search/tweets')
+
+        for item in result.get_iterator():
+            
+            if 'text' in item:
+                tweet = ff.tweet.Tweet(item)
+
+                if not tweet.retweeted:
+                    if tweet.postedtime > start and tweet.postedtime < end:
+                        self.add_to_db(tweet, team)
+                    elif tweet.postedtime < start:
+                        break
+
+            elif 'message' in item and item['code'] == '88':
+                delta = datetime.fromtimestamp(quota['reset']) - datetime.now()
+                print "Quota reached for search/tweets. Waiting %s seconds." % delta.total_seconds()
+                time.sleep(delta.total_seconds())
+
     def search_game_tweets(self, gameid):
         ''' Finds tweets for a gameid
         '''
-        pass
+        info = ff.sched.game_info(gameid)
+        pre, post = ff.sched.pre_post_times(info['starttime'])
+        now = datetime.utcnow()
+
+        startage = now - pre
+        endage = now - post
+        oneweek = now - timedelta(days=7)
+        upcoming = now + timedelta(hours=1)
+
+        if pre < oneweek:   # Historic game (> 1 week)
+            print "historic game"
+        elif pre > oneweek and post < now:  # Recent game (< 1 week)
+            print "recent game"
+        elif pre < now and post > now:  # Live game (on now)
+            print "live game"
+        elif pre > now and pre < upcoming:  # Upcoming game (within 1 hour)
+            print "upcoming game"
+        elif pre > datetime.now():  # Pending game (> 1 hour away)
+            print "pending game"
