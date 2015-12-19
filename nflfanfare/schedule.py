@@ -7,6 +7,7 @@ import pytz
 import re
 from selenium import webdriver
 from StringIO import StringIO
+import sys
 import urllib2
 
 import nflfanfare as ff
@@ -167,10 +168,10 @@ class Schedule:
                 sched[g]['home'] = 'JAX'
 
             if (sched[g]['home'] == hometeam
-                    and sched[g]['away'] == awayteam
-                    and sched[g]['year'] == int(year)
-                    and sched[g]['month'] == int(month)
-                    and sched[g]['day'] == int(day)
+                and sched[g]['away'] == awayteam
+                and sched[g]['year'] == int(year)
+                and sched[g]['month'] == int(month)
+                and sched[g]['day'] == int(day)
                 ):
                 return (sched[g]['gamekey'],
                         sched[g]['eid'],
@@ -286,83 +287,59 @@ class Schedule:
     def in_db(self, gameid):
         ''' Returns true if gameid is in database
         '''
-        query = """SELECT EXISTS(SELECT 1 FROM schedule WHERE gameid =\"%s\" LIMIT 1);
-                """ % (gameid)
-        result = ff.db.engine.execute(query)
-        indb = list(result)[0][0]
-
-        if indb == 1:
-            return True
-        return False
+        result = ff.db.schedule.query.filter_by(gameid=gameid)
+        return ff.db.session.query(result.exists()).scalar()
 
     def is_complete(self, gameid):
         ''' Returns true if gameid is in database
         '''
-        query = """SELECT `endtime` FROM `schedule` WHERE gameid =\"%s\" LIMIT 1;
-                """ % (gameid)
-        result = ff.db.engine.execute(query)
-        indb = list(result)[0][0]
-
-        if not indb == None:
+        result = ff.db.schedule.query.filter_by(gameid=gameid).one()
+        if not result.endtime == None:
             return True
         return False
 
     def add_game(self, row):
         ''' Adds game to database
         '''
-        query = """INSERT INTO `schedule` (`gameid`,
-                                            `eid`,
-                                            `week`,
-                                            `seasontype`,
-                                            `hometeam`,
-                                            `awayteam`,
-                                            `starttime`)
-                                        VALUES 
-                                        ('%s', '%s', '%s', '%s', '%s',
-                                         '%s', '%s');
-                                    """ % (row['gameid'],
-                                           row['eid'],
-                                           row['week'],
-                                           row['seasontype'],
-                                           row['hometeam'],
-                                           row['awayteam'],
-                                           row['starttime'] if 'starttime' in row.index else 'NULL'
-                                           )
+        query = ff.db.schedule(gameid=row['gameid'],
+                               eid=row['eid'],
+                               week=row['week'],
+                               seasontype=row['seasontype'],
+                               hometeam=row['hometeam'],
+                               awayteam=row['awayteam'],
+                               starttime=row[
+                                   'starttime'] if 'starttime' in row.index else None
+                               )
         try:
-            ff.db.engine.execute(query)
+            ff.db.session.add(query)
+            ff.db.session.commit()
         except:
-            pass
+            print "Could not add %s to database" % row['gameid']
+            print "Error:", sys.exc_info()
 
     def add_pfr_info(self, gameid, info):
         ''' Adds Pro-Football Reference info to database
         '''
-        query = """UPDATE `schedule` SET 
-                        `starttime`='%s',
-                        `endtime`='%s',
-                        `stadium`='%s',
-                        `weather`='%s',
-                        `wontoss`='%s',
-                        `attendance`='%s',
-                        `vegasline`='%s',
-                        `overunder`='%s'
-                        WHERE `gameid`='%s'
-                """ % (info['starttime'] if info.has_key('starttime') else None,
-                       info['endtime'] if info.has_key('endtime') else None,
-                       info['stadium'] if info.has_key('stadium') else None,
-                       info['weather'] if info.has_key('weather') else None,
-                       info['wontoss'] if info.has_key('wontoss') else None,
-                       info['attendance'] if info.has_key(
-                           'attendance') else None,
-                       info['vegasline'] if info.has_key(
-                           'vegasline') else None,
-                       info['overunder'] if info.has_key(
-                           'overunder') else None,
-                       gameid)
-        print query
+        table = ff.db.session.query(ff.db.schedule).get(gameid)
+        
+        table.starttime = info['starttime'] if info.has_key(
+            'starttime') else None
+        table.endtime = info['endtime'] if info.has_key('endtime') else None
+        table.stadium = info['stadium'] if info.has_key('stadium') else None
+        table.weather = info['weather'] if info.has_key('weather') else None
+        table.wontoss = info['wontoss'] if info.has_key('wontoss') else None
+        table.attendance = info['attendance'] if info.has_key(
+            'attendance') else None
+        table.vegasline = info['vegasline'] if info.has_key(
+            'vegasline') else None
+        table.overunder = info['overunder'] if info.has_key(
+            'overunder') else None
+
         try:
-            ff.db.engine.execute(query)
+            ff.db.session.commit()
         except:
-            pass
+            print "Could not update %s PFR info." % row['gameid']
+            print "Error:", sys.exc_info()
 
     def update_db(self):
         ''' Updates schedule table of database
@@ -392,4 +369,3 @@ class Schedule:
         '''
 
         query = """SELECT * FROM `schedule` WHERE `gameid`='%s'""" % gameid
-        
