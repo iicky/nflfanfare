@@ -102,6 +102,7 @@ class Twitter:
             if verbose == True:
                 print "Could not add %s to database." % (tweet.tweetid)
                 print "Error:", sys.exc_info()
+                ff.db.session.rollback()
 
     def search_historic(self, search, start, end, live=True):
         ''' Finds historic tweets and adds them to the database
