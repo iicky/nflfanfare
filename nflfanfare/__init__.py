@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import nflfanfare.collector as col
 import nflfanfare.database as db
 import nflfanfare.schedule as sched
 import nflfanfare.team as team
@@ -7,6 +8,7 @@ import nflfanfare.tweet as tweet
 import nflfanfare.twitter as twitter
 
 
+col = col.Collector()
 db = db.DB()
 sched = sched.Schedule()
 team = team.Team()
