@@ -3,11 +3,13 @@ from datetime import datetime, timedelta
 import json
 import numpy as np
 import os
+import pytz
 import re
 import secrets as sec
 from selenium import webdriver
 import sys
 import time
+import tzlocal
 from TwitterAPI import TwitterAPI, TwitterRestPager
 import urllib2
 
@@ -127,6 +129,16 @@ class Twitter:
         search = urllib2.quote('#' + search, safe='')
         
         if type(start) == datetime:
+            # Convert to UTC timezone
+            start = pytz.timezone('UTC').localize(start)
+            end = pytz.timezone('UTC').localize(end)
+
+            # Convert to local timezone
+            local = tzlocal.get_localzone()
+            start = start.astimezone(local)
+            end = end.astimezone(local)
+
+            # Make timestamp
             start = int(time.mktime(start.timetuple()))
             end = int(time.mktime(end.timetuple()))
         else:
