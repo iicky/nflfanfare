@@ -7,6 +7,7 @@ import pytz
 import re
 from selenium import webdriver
 from StringIO import StringIO
+import sqlalchemy as sql
 import sys
 import urllib2
 
@@ -392,3 +393,16 @@ class Schedule:
         pregame = starttime - timedelta(hours=1)
         postgame = starttime + timedelta(hours=4)
         return (pregame, postgame)
+
+    def tweet_count(self, gameid):
+        ''' Returns the tweet count for a game
+        '''
+        info = self.game_info(gameid)
+        result = ff.db.session.query(ff.db.tweets, ff.db.schedule).\
+            join(ff.db.schedule, sql.or_(
+                ff.db.tweets.teamid == ff.db.schedule.hometeam,
+                ff.db.tweets.teamid == ff.db.schedule.awayteam)).\
+                filter(ff.db.schedule.gameid == gameid).\
+                filter(ff.db.tweets.postedtime >= str(info['starttime'])).\
+                filter(ff.db.tweets.postedtime <= str(info['endtime'])).count()
+        return result
