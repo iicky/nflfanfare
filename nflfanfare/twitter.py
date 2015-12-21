@@ -125,8 +125,15 @@ class Twitter:
 
         # Clean up inputs
         search = urllib2.quote('#' + search, safe='')
-        start = int(time.mktime(time.strptime(start, "%Y-%m-%d %H:%M")))
-        end = int(time.mktime(time.strptime(end, "%Y-%m-%d %H:%M")))
+        
+        if type(start) == datetime:
+            start = int(time.mktime(start.timetuple()))
+            end = int(time.mktime(end.timetuple()))
+        else:
+            start = int(time.mktime(time.strptime(start, "%Y-%m-%d %H:%M")))
+            end = int(time.mktime(time.strptime(end, "%Y-%m-%d %H:%M")))
+
+
         mod = '' if not live else 'f=tweets&'
 
         # Generate url queries
