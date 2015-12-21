@@ -411,7 +411,7 @@ class Schedule:
                 filter(ff.db.schedule.gameid == gameid).\
                 filter(ff.db.tweets.postedtime >= str(info['starttime'])).\
                 filter(ff.db.tweets.postedtime <= str(info['endtime'])).count()
-        return 
+        return result
 
     def game_status(self, gameid):
         ''' Returns game status
