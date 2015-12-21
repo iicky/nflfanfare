@@ -206,14 +206,28 @@ class Twitter:
     def search_recent(self, search, start, end, verbose=False):
         ''' Pages through search API for tweets under 7 days old
         '''
-        endstamp = str(int(time.mktime(end.timetuple())))
+
+        if type(start) == datetime:
+            # Convert to UTC timezone
+            start = pytz.timezone('UTC').localize(start)
+            end = pytz.timezone('UTC').localize(end)
+
+            # Convert to local timezone
+            local = tzlocal.get_localzone()
+            start = start.astimezone(local)
+            end = end.astimezone(local)
+
+            # Make timestamp
+            endstamp = int(time.mktime(end.timetuple()))
+        else:
+            endstamp = int(time.mktime(time.strptime(end, "%Y-%m-%d %H:%M")))
 
         # Get NFL teamid from hashtag
         team = ff.team.teamid_from_hashtag(search)
         search = '#'+search
 
         result = TwitterRestPager(
-            self.twi, 'search/tweets', {'q': search, 'lang': 'en', 'count': 100, 'until': endstamp})
+            self.twi, 'search/tweets', {'q': search, 'lang': 'en', 'count': 100, 'until': str(endstamp)})
         quota = self.quota('/search/tweets')
 
         for item in result.get_iterator():
