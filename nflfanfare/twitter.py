@@ -237,7 +237,7 @@ class Twitter:
 
                 if not tweet.retweeted:
                     if tweet.postedtime > start and tweet.postedtime < end:
-                        self.add_to_db(tweet, team)
+                        self.add_to_db(tweet, team, verbose=verbose)
                     elif tweet.postedtime < start:
                         break
 
