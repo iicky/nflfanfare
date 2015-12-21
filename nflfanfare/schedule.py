@@ -373,6 +373,12 @@ class Schedule:
         result = ff.db.schedule.query.filter_by(gameid=gameid).one()
         return result.__dict__
 
+    def all_games(self):
+        ''' Returns dataframe of all games
+        '''
+        df = pd.read_sql_table('schedule', ff.db.engine)
+        return df
+
     def completed_games(self):
         ''' Returns dataframe of completed games
         '''
