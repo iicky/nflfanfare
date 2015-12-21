@@ -39,4 +39,17 @@ class Collector:
         print "Total time:\t", totalwait
         print "Start wait:\t", startwait
 
-        
+
+
+    def collect_historic(self, gameid):
+        ''' Collects historic tweets for a game
+        '''
+        info = ff.sched.game_info(gameid)
+        pre, post = ff.sched.pre_post_times(info['starttime'])
+
+        homehash = ff.team.team_hashtags(info['hometeam'])
+        awayhash = ff.team.team_hashtags(info['awayteam'])
+        hashtags = homehash + awayhash
+
+        for hashtag in hashtags:
+            ff.twitter.search_historic(hashtag, pre, post, verbose=True)
