@@ -405,4 +405,25 @@ class Schedule:
                 filter(ff.db.schedule.gameid == gameid).\
                 filter(ff.db.tweets.postedtime >= str(info['starttime'])).\
                 filter(ff.db.tweets.postedtime <= str(info['endtime'])).count()
-        return result
+        return 
+
+    def game_status(self, gameid):
+        ''' Returns game status
+        '''
+        start = self.game_info(gameid)['starttime']
+        pre, post = self.pre_post_times(start)
+        now = datetime.utcnow()
+        oneweek = now - timedelta(days=7)
+        upcoming = now + timedelta(hours=1)
+
+        if pre < oneweek:   # Historic game (> 1 week)
+            return "historic"
+        elif pre > oneweek and post < now:  # Recent game (< 1 week)
+            return "recent"
+        elif pre < now and post > now:  # Live game (on now)
+            return "live"
+        elif pre > now and pre < upcoming:  # Upcoming game (within 1 hour)
+            return "upcoming"
+        elif pre > datetime.now():  # Pending game (> 1 hour away)
+            return "pending"
+
