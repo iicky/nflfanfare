@@ -1,5 +1,5 @@
 #!/usr/bin/env python
 
-import nflfanfare as ff
+from nflfanfare import schedule
 
-ff.sched.update_db()
+schedule.Schedule().update_db()
