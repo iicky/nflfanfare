@@ -209,18 +209,18 @@ class Twitter:
 
         if type(start) == datetime:
             # Convert to UTC timezone
-            start = pytz.timezone('UTC').localize(start)
-            end = pytz.timezone('UTC').localize(end)
+            endaware = pytz.timezone('UTC').localize(end)
 
             # Convert to local timezone
             local = tzlocal.get_localzone()
-            start = start.astimezone(local)
-            end = end.astimezone(local)
+            endaware = endaware.astimezone(local)
 
             # Make timestamp
-            endstamp = int(time.mktime(end.timetuple()))
+            endstamp = int(time.mktime(endaware.timetuple()))
         else:
-            endstamp = int(time.mktime(time.strptime(end, "%Y-%m-%d %H:%M")))
+            start = time.strptime(start, "%Y-%m-%d %H:%M")
+            end = time.strptime(end, "%Y-%m-%d %H:%M")
+            endstamp = int(time.mktime(end))
 
         # Get NFL teamid from hashtag
         team = ff.team.teamid_from_hashtag(search)
