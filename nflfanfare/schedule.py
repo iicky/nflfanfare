@@ -169,11 +169,11 @@ class Schedule:
                 sched[g]['home'] = 'JAX'
 
             if (sched[g]['home'] == hometeam
-                and sched[g]['away'] == awayteam
-                and sched[g]['year'] == int(year)
-                and sched[g]['month'] == int(month)
-                and sched[g]['day'] == int(day)
-                ):
+                        and sched[g]['away'] == awayteam
+                        and sched[g]['year'] == int(year)
+                        and sched[g]['month'] == int(month)
+                        and sched[g]['day'] == int(day)
+                    ):
                 return (sched[g]['gamekey'],
                         sched[g]['eid'],
                         sched[g]['season_type'])
@@ -206,6 +206,9 @@ class Schedule:
             lambda d: datetime.strptime(d, '%B').month)
         df['day'] = df.date.str.split(' ').str.get(1)
 
+        # Year offset fix
+        # df.year
+
         # Gets nflgame information
         info = df.apply(lambda row: self.nflgame_info(row['hometeam'],
                                                       row['awayteam'],
@@ -215,6 +218,10 @@ class Schedule:
         df['gameid'] = info.str.get(0)
         df['eid'] = info.str.get(1)
         df['seasontype'] = info.str.get(2)
+
+        # Year offset fix
+        df['year'] = df.apply(lambda row: row['year'] +
+                              1 if row['month'] < 7 else row['year'], axis=1)
 
         # Gets PFRID and boxscore links for hometeams
         df['pfrid'] = df.hometeam.apply(ff.team.pfrid_from_teamid)
@@ -255,6 +262,10 @@ class Schedule:
         df['gameid'] = info.str.get(0)
         df['eid'] = info.str.get(1)
         df['seasontype'] = info.str.get(2)
+
+        # Year offset fix
+        df['year'] = df.apply(lambda row: row['year'] +
+                              1 if row['month'] < 7 else row['year'], axis=1)
 
         # Gets PFRID and boxscore links for hometeams
         df['pfrid'] = df.hometeam.apply(ff.team.pfrid_from_teamid)
@@ -409,10 +420,10 @@ class Schedule:
             join(ff.db.schedule, sql.or_(
                 ff.db.tweets.teamid == ff.db.schedule.hometeam,
                 ff.db.tweets.teamid == ff.db.schedule.awayteam)).\
-                filter(ff.db.schedule.gameid == gameid).\
-                filter(ff.db.tweets.sent_compound != 0).\
-                filter(ff.db.tweets.postedtime >= str(pre)).\
-                filter(ff.db.tweets.postedtime <= str(post)).count()
+            filter(ff.db.schedule.gameid == gameid).\
+            filter(ff.db.tweets.sent_compound != 0).\
+            filter(ff.db.tweets.postedtime >= str(pre)).\
+            filter(ff.db.tweets.postedtime <= str(post)).count()
         return result
 
     def game_status(self, gameid):
@@ -434,4 +445,3 @@ class Schedule:
             return "upcoming"
         elif pre > datetime.now():  # Pending game (> 1 hour away)
             return "pending"
-
