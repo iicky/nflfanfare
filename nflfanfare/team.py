@@ -47,3 +47,9 @@ class Team:
         '''
         result = ff.db.teams.query.filter_by(teamid=teamid).one()
         return result.pfrid
+
+    def teams(self):
+        ''' Returns teams as dataframe
+        '''
+        df = pd.read_sql_table('teams', ff.db.engine)
+        return df
