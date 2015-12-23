@@ -11,7 +11,7 @@ class Statistics:
     	''' Returns pandas dataframe of game info and tweet counts
     	'''
     	df = ff.sched.all_games()
-    	#df['tweetcount'] = df.gameid.apply(ff.sched.tweet_count)
+    	df['tweetcount'] = df.gameid.apply(ff.sched.tweet_count)
     	return df
 
     def teams_list(self):

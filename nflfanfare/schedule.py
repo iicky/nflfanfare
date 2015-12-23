@@ -434,15 +434,9 @@ class Schedule:
         ''' Returns the tweet count for a game
         '''
         info = self.game_info(gameid)
-        pre, post = self.pre_post_times(info['starttime'])
-        result = ff.db.session.query(ff.db.tweets, ff.db.schedule).\
-            join(ff.db.schedule, sql.or_(
-                ff.db.tweets.teamid == ff.db.schedule.hometeam,
-                ff.db.tweets.teamid == ff.db.schedule.awayteam)).\
-            filter(ff.db.schedule.gameid == gameid).\
-            filter(ff.db.tweets.sent_compound != 0).\
-            filter(ff.db.tweets.postedtime >= str(pre)).\
-            filter(ff.db.tweets.postedtime <= str(post)).count()
+        result = ff.db.session.query(ff.db.tweets).\
+            filter(ff.db.tweets.gameid == gameid).\
+            filter(ff.db.tweets.sent_compound != 0).count()
         return result
 
     def game_status(self, gameid):
