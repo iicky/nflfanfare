@@ -200,7 +200,7 @@ class Twitter:
             time.sleep(np.random.lognormal(1, .5, 1)[0])
             button.click()
             i += 1
-            
+
         browser.close()
         browser.quit()
 
@@ -269,3 +269,19 @@ class Twitter:
             print "upcoming game"
         elif pre > datetime.now():  # Pending game (> 1 hour away)
             print "pending game"
+
+    def tweet_gameid(self, tweetid):
+        ''' Returns the game id for a tweet in database
+        '''
+        result = ff.db.session.query(ff.db.tweets, ff.db.schedule).\
+            join(ff.db.schedule, sql.or_(
+                ff.db.tweets.teamid == ff.db.schedule.hometeam,
+                ff.db.tweets.teamid == ff.db.schedule.awayteam)).\
+            filter(ff.db.tweets.tweetid == tweetid).\
+            filter(ff.db.tweets.postedtime.between(
+                sql.text('schedule.starttime - INTERVAL 1 HOUR'),
+                sql.text('schedule.starttime + INTERVAL 4 HOUR'))).first()
+
+        if hasattr(result, 'Schedule'):
+            return result.Schedule.gameid
+        return None
