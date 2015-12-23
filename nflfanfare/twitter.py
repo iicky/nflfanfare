@@ -153,7 +153,7 @@ class Twitter:
         # Generate url queries
         url = 'http://mobile.twitter.com/search'
         url += '?%svertical=default' % mod
-        url += '&q=%s%%20lang%%3Aen%%20' % search
+        url += '&q="%s"%%20lang%%3Aen%%20' % search
         url += 'since%%3A%s%%20' % start
         url += 'until%%3A%s&src=typd' % end
 
@@ -168,7 +168,7 @@ class Twitter:
         i = 1
         while True:
 
-            print "Scraping page %s for %s..." % (i, urllib2.unquote(search))
+            print "Scraping page %s for %s... %s" % (i, urllib2.unquote(search), url)
 
             # Get the source code for page
             html = browser.page_source.encode("utf-8")
@@ -180,6 +180,8 @@ class Twitter:
             for tweetid in tweetids:
                 tweetid = tweetid.attrs['href'].split('/')[3]
                 if self.in_db(tweetid):
+                    if verbose:
+                        print "Tweet %s has already been collected" % tweetid
                     continue
                 try:
                     responses = self.searchid(tweetid)
@@ -188,7 +190,9 @@ class Twitter:
                         if not tweet.retweeted:
                             self.add_to_db(tweet, team, verbose=verbose)
                 except:
-                    pass
+                    if verbose == True:
+                        print "Could not collect tweet %s." % (tweet.tweetid)
+                        print "Error:", sys.exc_info()
 
             # Get the next page button and exit if does not exit
             loadmore = browser.find_elements_by_xpath(
