@@ -1,3 +1,4 @@
+import pandas as pd
 from sqlalchemy.sql.expression import func
 
 import nflfanfare as ff
