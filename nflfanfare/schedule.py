@@ -413,6 +413,23 @@ class Schedule:
         postgame = starttime + timedelta(hours=4)
         return (pregame, postgame)
 
+    def gameid_from_team_time(self, teamid, postedtime):
+        ''' Returns gameid from a teamid and posted time
+        '''
+        result = ff.db.session.query(ff.db.schedule).\
+            filter(sql.or_(
+                teamid == ff.db.schedule.hometeam,
+                teamid == ff.db.schedule.awayteam)).\
+            filter(sql.and_(
+                    sql.text(':postedtime > schedule.starttime - INTERVAL 1 HOUR').\
+                    bindparams(postedtime=postedtime),
+                    sql.text(':postedtime < schedule.starttime + INTERVAL 4 HOUR').\
+                    bindparams(postedtime=postedtime))).first()
+
+        if hasattr(result, 'gameid'):
+            return result.gameid
+        return None
+
     def tweet_count(self, gameid):
         ''' Returns the tweet count for a game
         '''
