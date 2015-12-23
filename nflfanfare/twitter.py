@@ -100,7 +100,10 @@ class Twitter:
                              sent_pos=tweet.sent_pos,
                              sent_neg=tweet.sent_neg,
                              sent_neu=tweet.sent_neu,
-                             sent_compound=tweet.sent_compound)
+                             sent_compound=tweet.sent_compound,
+                             gameid=ff.sched.gameid_from_team_time(
+                                 teamid, tweet.postedtime)
+                             )
 
         try:
             if not self.in_db(tweet.tweetid):
@@ -127,7 +130,7 @@ class Twitter:
 
         # Clean up inputs
         search = urllib2.quote('#' + search, safe='')
-        
+
         if type(start) == datetime:
             # Convert to UTC timezone
             start = pytz.timezone('UTC').localize(start)
@@ -144,7 +147,6 @@ class Twitter:
         else:
             start = int(time.mktime(time.strptime(start, "%Y-%m-%d %H:%M")))
             end = int(time.mktime(time.strptime(end, "%Y-%m-%d %H:%M")))
-
 
         mod = '' if not live else 'f=tweets&'
 
@@ -225,14 +227,14 @@ class Twitter:
 
         # Get NFL teamid from hashtag
         team = ff.team.teamid_from_hashtag(search)
-        search = '#'+search
+        search = '#' + search
 
         result = TwitterRestPager(
             self.twi, 'search/tweets', {'q': search, 'lang': 'en', 'count': 100, 'until': str(endstamp)})
         quota = self.quota('/search/tweets')
 
         for item in result.get_iterator():
-            
+
             if 'text' in item:
                 tweet = ff.tweet.Tweet(item)
 
