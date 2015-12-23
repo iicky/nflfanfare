@@ -200,7 +200,8 @@ class Twitter:
             time.sleep(np.random.lognormal(1, .5, 1)[0])
             button.click()
             i += 1
-
+            
+        browser.close()
         browser.quit()
 
     def search_recent(self, search, start, end, verbose=False):

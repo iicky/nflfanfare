@@ -38,6 +38,7 @@ class Schedule:
         # Get the source code for page
         html = browser.page_source.encode("utf-8")
         soup = BeautifulSoup(html, "html.parser")
+        browser.close()
         browser.quit()
 
         # Find preformatted CSV
@@ -72,6 +73,7 @@ class Schedule:
         # Get the source code for page
         html = browser.page_source.encode("utf-8")
         soup = BeautifulSoup(html, "html.parser")
+        browser.close()
         browser.quit()
 
         # Find preformatted CSV
