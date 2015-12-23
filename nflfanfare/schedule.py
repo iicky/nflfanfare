@@ -439,6 +439,22 @@ class Schedule:
             filter(ff.db.tweets.sent_compound != 0).count()
         return result
 
+    def all_tweet_counts(self):
+        ''' Returns game information with tweet counts for all games
+        '''
+        query = """SELECT *, 
+                   CASE
+                   WHEN s.gameid NOT IN (SELECT gameid FROM tweets 
+                                         WHERE gameid IS NOT NULL)
+                   THEN 0
+                   ELSE (SELECT COUNT(tweetid) FROM tweets
+                         WHERE gameid=s.gameid)
+                   END as tweetcount
+                   FROM schedule s
+                """
+        result = pd.read_sql_query(query, ff.db.engine)
+        return result
+
     def game_status(self, gameid):
         ''' Returns game status
         '''
