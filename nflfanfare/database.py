@@ -99,6 +99,7 @@ class Tweets(DB().Base):
     sent_neg = Column(String)
     sent_neu = Column(String)
     sent_compound = Column(String)
+    gameid = Column(String)
 
     def __init__(self, tweetid=None,
                  teamid=None,
@@ -117,7 +118,8 @@ class Tweets(DB().Base):
                  sent_pos=None,
                  sent_neg=None,
                  sent_neu=None,
-                 sent_compound=None):
+                 sent_compound=None,
+                 gameid=None):
         self.tweetid = tweetid
         self.teamid = teamid
         self.userid = userid
@@ -136,6 +138,7 @@ class Tweets(DB().Base):
         self.sent_neg = sent_neg
         self.sent_neu = sent_neu
         self.sent_compound = sent_compound
+        self.gameid = gameid
 
 
 class Teams(DB().Base):
