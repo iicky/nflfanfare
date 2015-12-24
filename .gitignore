@@ -22,3 +22,17 @@ twitter.html
 manual.py
 
 secrets.py
+
+*.gif
+
+*.jpg
+
+*.bkr
+
+SQL/tweets_view.csv
+
+app/templates/scrolltest.html.old
+
+app/templates/scrolltest.test
+
+manualr.py
