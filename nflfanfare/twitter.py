@@ -193,6 +193,7 @@ class Twitter:
                     if verbose == True:
                         print "Could not collect tweet %s." % (tweet.tweetid)
                         print "Error:", sys.exc_info()
+                    pass
 
             # Get the next page button and exit if does not exit
             loadmore = browser.find_elements_by_xpath(
