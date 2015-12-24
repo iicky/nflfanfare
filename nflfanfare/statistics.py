@@ -1,3 +1,7 @@
+from datetime import datetime
+import pytz
+import tzlocal
+
 import nflfanfare as ff
 
 
@@ -13,7 +17,18 @@ class Statistics:
         '''
         df = ff.sched.all_tweet_counts()
         df = df[["gameid", "week", "seasontype", "hometeam",
-                 "awayteam", "starttime", "endtime", "tweetcount"]]
+                 "awayteam", "starttime", "tweetcount"]]
+
+        df['status'] = df.gameid.apply(ff.sched.game_status)
+
+        # Convert to UTC then local timezone
+        local = tzlocal.get_localzone()
+        df['starttime'] = df.starttime.apply(
+            lambda d: pytz.timezone('UTC').localize(d)).astype(datetime)
+        df['starttime'] = df.starttime.apply(lambda d: datetime.strftime(
+            d.astimezone(local), '%b %d, %Y %I:%M%p %Z'))
+        df['starttime'] = df.starttime.astype(str)
+
         return df
 
     def teams_list(self):
