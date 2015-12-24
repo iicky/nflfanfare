@@ -448,7 +448,8 @@ class Schedule:
                                          WHERE gameid IS NOT NULL)
                    THEN 0
                    ELSE (SELECT COUNT(tweetid) FROM tweets
-                         WHERE gameid=s.gameid)
+                         WHERE gameid=s.gameid
+                         AND sent_compound != 0)
                    END as tweetcount
                    FROM schedule s
                 """
