@@ -53,6 +53,17 @@ class Collector:
         for hashtag in hashtags:
             ff.twitter.search_historic(hashtag, pre, post, verbose=verbose)
 
+    def collect_historic_by_team(self, gameid, teamid, verbose=False):
+        ''' Collects tweets for a historic game given a team
+        '''
+        info = ff.sched.game_info(gameid)
+        pre, post = ff.sched.pre_post_times(info['starttime'])
+
+        hashtags = ff.team.team_hashtags(teamid)
+
+        for hashtag in hashtags:
+            ff.twitter.search_historic(hashtag, pre, post, verbose=verbose)
+
 
     def collect_recent(self, gameid, verbose=False):
         ''' Collects tweets for a recent game
