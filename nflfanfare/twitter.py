@@ -102,7 +102,8 @@ class Twitter:
                              sent_neu=tweet.sent_neu,
                              sent_compound=tweet.sent_compound,
                              gameid=ff.sched.gameid_from_team_time(
-                                 teamid, tweet.postedtime)
+                                 teamid, tweet.postedtime),
+                             source=tweet.source
                              )
 
         try:
