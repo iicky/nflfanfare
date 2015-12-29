@@ -80,15 +80,15 @@ class Twitter:
         ''' Returns JSON object for scraped tweet by id
         '''
         url = 'https://mobile.twitter.com/%s/status/%s' % (username, tweetid)
-        
+
         if platform.system() == 'Linux':
             display = Display(visible=0, size=(800, 600))
             display.start()
-        
+
         # Open URL in Chrome driver
         browser = webdriver.Chrome()
-        time.sleep(np.random.lognormal(1, .5, 1)[0])
         browser.get(url)
+        time.sleep(np.random.lognormal(1, .5, 1)[0])
 
         # Get the source code for page
         html = browser.page_source.encode("utf-8")
@@ -97,11 +97,11 @@ class Twitter:
         # Clean up
         browser.close()
         browser.quit()
-        
-        # Get json 
-        tjson = soup.find('script', {'id' : 'init-data'}).text
+
+        # Get json
+        tjson = soup.find('script', {'id': 'init-data'}).text
         result = json.loads(tjson)['state']['tweetDetail']['tweet']
-        
+
         return result
 
     def in_db(self, tweetid):
@@ -297,20 +297,19 @@ class Twitter:
             # Scrape tweets on page
             tweetids = soup.find_all('a', class_='last')
 
-            for url in tweetids:
-                url = url.attrs['href'].split('/')
-                tweetid = url[3]
-                username = url[1]
+            for tweet in tweetids:
+                tweet = tweet.attrs['href'].split('/')
+                tweetid = tweet[3]
+                username = tweet[1]
                 if self.in_db(tweetid):
                     if verbose:
                         print "Tweet %s has already been collected" % tweetid
                     continue
                 try:
-                    responses = self.scrapeid(username, tweetid)
-                    for response in responses:
-                        tweet = ff.tweet.Tweet(response)
-                        if not tweet.retweeted:
-                            self.add_to_db(tweet, team, verbose=verbose)
+                    response = self.scrapeid(username, tweetid)
+                    tweet = ff.tweet.Scrape(response)
+                    if not tweet.retweeted:
+                        self.add_to_db(tweet, team, verbose=verbose)
                 except:
                     if verbose == True:
                         print "Could not collect tweet %s." % (tweet.tweetid)
