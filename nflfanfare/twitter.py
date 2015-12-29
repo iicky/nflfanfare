@@ -242,6 +242,97 @@ class Twitter:
         browser.close()
         browser.quit()
 
+    def scrape_historic(self, search, start, end, live=True, verbose=False):
+        ''' Finds historic tweets and adds them to the database
+        '''
+        # Get NFL teamid from hashtag
+        team = ff.team.teamid_from_hashtag(search)
+
+        # Clean up inputs
+        search = urllib2.quote('#' + search, safe='')
+
+        if type(start) == datetime:
+            # Convert to UTC timezone
+            start = pytz.timezone('UTC').localize(start)
+            end = pytz.timezone('UTC').localize(end)
+
+            # Convert to local timezone
+            local = tzlocal.get_localzone()
+            start = start.astimezone(local)
+            end = end.astimezone(local)
+
+            # Make timestamp
+            start = int(time.mktime(start.timetuple()))
+            end = int(time.mktime(end.timetuple()))
+        else:
+            start = int(time.mktime(time.strptime(start, "%Y-%m-%d %H:%M")))
+            end = int(time.mktime(time.strptime(end, "%Y-%m-%d %H:%M")))
+
+        mod = '' if not live else 'f=tweets&'
+
+        # Generate url queries
+        url = 'http://mobile.twitter.com/search'
+        url += '?%svertical=default' % mod
+        url += '&q="%s"%%20lang%%3Aen%%20' % search
+        url += 'since%%3A%s%%20' % start
+        url += 'until%%3A%s&src=typd' % end
+
+        # Open url in browser
+        browser = webdriver.PhantomJS(executable_path='/usr/local/bin/phantomjs',
+                                      service_log_path=os.path.devnull)
+        browser.get(url)
+
+        # Pretend to be a human
+        time.sleep(np.random.lognormal(1, .5, 1)[0])
+
+        i = 1
+        while True:
+
+            print "Scraping page %s for %s... %s" % (i, urllib2.unquote(search), url)
+
+            # Get the source code for page
+            html = browser.page_source.encode("utf-8")
+            soup = BeautifulSoup(html, "html.parser")
+
+            # Scrape tweets on page
+            tweetids = soup.find_all('a', class_='last')
+
+            for url in tweetids:
+                url = url.attrs['href'].split('/')
+                tweetid = url[3]
+                username = url[1]
+                if self.in_db(tweetid):
+                    if verbose:
+                        print "Tweet %s has already been collected" % tweetid
+                    continue
+                try:
+                    responses = self.scrapeid(username, tweetid)
+                    for response in responses:
+                        tweet = ff.tweet.Tweet(response)
+                        if not tweet.retweeted:
+                            self.add_to_db(tweet, team, verbose=verbose)
+                except:
+                    if verbose == True:
+                        print "Could not collect tweet %s." % (tweet.tweetid)
+                        print "Error:", sys.exc_info()
+                    pass
+
+            # Get the next page button and exit if does not exit
+            loadmore = browser.find_elements_by_xpath(
+                "//a[contains(text(), ' Load older Tweets ')]")
+            if len(loadmore) == 0:
+                print "End of results."
+                break
+
+            # Click the button
+            button = loadmore[0]
+            time.sleep(np.random.lognormal(1, .5, 1)[0])
+            button.click()
+            i += 1
+
+        browser.close()
+        browser.quit()
+
     def search_recent(self, search, start, end, verbose=False):
         ''' Pages through search API for tweets under 7 days old
         '''
