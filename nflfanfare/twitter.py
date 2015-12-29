@@ -99,10 +99,12 @@ class Twitter:
         browser.quit()
 
         # Get json
-        tjson = soup.find('script', {'id': 'init-data'}).text
-        result = json.loads(tjson)['state']['tweetDetail']['tweet']
-
-        return result
+        try:
+            tjson = soup.find('script', {'id': 'init-data'}).text
+            result = json.loads(tjson)['state']['tweetDetail']['tweet']
+            return result
+        except:
+            return None
 
     def in_db(self, tweetid):
         ''' Returns true if tweet is in database
