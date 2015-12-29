@@ -243,7 +243,7 @@ class Twitter:
         browser.quit()
 
     def scrape_historic(self, search, start, end, live=True, verbose=False):
-        ''' Finds historic tweets and adds them to the database
+        ''' Scrapes historic tweets and adds them to the database
         '''
         # Get NFL teamid from hashtag
         team = ff.team.teamid_from_hashtag(search)
