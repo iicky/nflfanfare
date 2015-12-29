@@ -36,3 +36,5 @@ app/templates/scrolltest.html.old
 app/templates/scrolltest.test
 
 manualr.py
+
+timeshift.js
