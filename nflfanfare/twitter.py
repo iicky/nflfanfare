@@ -314,7 +314,7 @@ class Twitter:
                         self.add_to_db(tweet, team, verbose=verbose)
                 except:
                     if verbose == True:
-                        print "Could not collect tweet %s." % (tweet.tweetid)
+                        print "Could not collect tweet %s." % (tweetid)
                         print "Error:", sys.exc_info()
                     pass
 
