@@ -2,6 +2,7 @@ from datetime import datetime
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
 import re
 
+
 class Tweet:
     ''' Returns tweet object from API result
     '''
@@ -11,6 +12,7 @@ class Tweet:
         '''
 
         self.tweetid = tweet['id']
+        self.source = 'api'
 
         # User information
         self.userid = tweet['user']['id']
@@ -36,6 +38,46 @@ class Tweet:
 
         # Sentiment information
         sid = SentimentIntensityAnalyzer().polarity_scores(tweet['text'])
+        self.sent_pos = round(sid['pos'], 3)
+        self.sent_neg = round(sid['neg'], 3)
+        self.sent_neu = round(sid['neu'], 3)
+        self.sent_compound = round(sid['compound'], 3)
+
+
+class Scrape:
+    ''' Returns tweet object from scraped result
+    '''
+
+    def __init__(self, info):
+        ''' Defines tweet properties from scrape
+        '''
+
+        self.tweetid = info['id']
+        self.source = 'scraped'
+
+        # User information
+        self.userid = info['user']['bannerUrl'].split(
+            '/')[4] if info['user']['bannerUrl'] != None else None
+        self.username = info['user']['screenName']
+        self.realname = info['user']['displayName']
+        self.userlocation = info['user']['location']
+        self.usertimezone = None
+        self.userprofileimg = info['user']['avatarUrl']
+
+        # Tweet information
+        self.tweettext = info['text']['textString']
+        self.language = info['text']['lang']
+        self.hashtags = ','.join([tag['text'] for tag in info['text'][
+                                 'textParts'] if tag['isHashtag'] == True])
+        self.usermentions = ','.join([tag['text'] for tag in info['text'][
+                                     'textParts'] if tag['isMention'] == True])
+        self.retweeted = info['isRetweeted']
+        self.postedtime = datetime.strptime(
+            info['utcTimestamp'][:19], '%Y-%m-%dT%H:%M:%S')
+        self.collectedtime = datetime.utcnow()
+
+        # Sentiment information
+        sid = SentimentIntensityAnalyzer().polarity_scores(self.tweettext)
         self.sent_pos = round(sid['pos'], 3)
         self.sent_neg = round(sid['neg'], 3)
         self.sent_neu = round(sid['neu'], 3)
