@@ -3,6 +3,8 @@ from datetime import datetime, timedelta
 import json
 import numpy as np
 import os
+import platform
+from pyvirtualdisplay import Display
 import pytz
 import re
 import secrets as sec
@@ -58,7 +60,7 @@ class Twitter:
 
     def searchid(self, tweetid):
         ''' Returns a tweet by id as string
-                Waits if API quota has been met
+            Waits if API quota has been met
         '''
         result = self.twi.request('statuses/show/:%d' % int(tweetid))
         remaining = int(result.response.headers['x-rate-limit-remaining'])
@@ -72,6 +74,34 @@ class Twitter:
             result = self.twi.request('statuses/show/:%d' % int(tweetid))
             return result
 
+        return result
+
+    def scrapeid(self, username, tweetid):
+        ''' Returns JSON object for scraped tweet by id
+        '''
+        url = 'https://mobile.twitter.com/%s/status/%s' % (username, tweetid)
+        
+        if platform.system() == 'Linux':
+            display = Display(visible=0, size=(800, 600))
+            display.start()
+        
+        # Open URL in Chrome driver
+        browser = webdriver.Chrome()
+        time.sleep(np.random.lognormal(1, .5, 1)[0])
+        browser.get(url)
+
+        # Get the source code for page
+        html = browser.page_source.encode("utf-8")
+        soup = BeautifulSoup(html, "html.parser")
+
+        # Clean up
+        browser.close()
+        browser.quit()
+        
+        # Get json 
+        tjson = soup.find('script', {'id' : 'init-data'}).text
+        result = json.loads(tjson)['state']['tweetDetail']['tweet']
+        
         return result
 
     def in_db(self, tweetid):
