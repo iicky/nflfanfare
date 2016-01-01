@@ -39,7 +39,7 @@ class Team:
         '''
         with ff.db.con() as ses:
             result = ses.query(ff.db.teams).filter(func.concat(
-                Teams.teamcity, ' ', Teams.teamname) == teamname).one()
+                ff.db.teams.teamcity, ' ', ff.db.teams.teamname) == teamname).one()
             return result.teamid
 
     def teamid_from_hashtag(self, hashtag):
