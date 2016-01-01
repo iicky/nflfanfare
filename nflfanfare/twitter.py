@@ -97,6 +97,8 @@ class Twitter:
         # Clean up
         browser.close()
         browser.quit()
+        if platform.system() == 'Linux':
+            display.stop()
 
         # Get json
         try:
