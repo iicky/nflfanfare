@@ -109,8 +109,9 @@ class Twitter:
     def in_db(self, tweetid):
         ''' Returns true if tweet is in database
         '''
-        result = ff.db.tweets.query.filter_by(tweetid=tweetid)
-        return ff.db.session.query(result.exists()).scalar()
+        with ff.db.con() as ses:
+            result = ses.query(ff.db.tweets).filter_by(tweetid=tweetid)
+            return ses.query(result.exists()).scalar()
 
     def add_to_db(self, tweet, teamid, verbose=False):
         ''' Adds a tweet object to the database
@@ -137,23 +138,23 @@ class Twitter:
                                  teamid, tweet.postedtime),
                              source=tweet.source
                              )
+        with ff.db.con() as ses:
+            try:
+                if not self.in_db(tweet.tweetid):
+                    if verbose == True:
+                        print "Adding %s: %s to database for %s." % (tweet.username, tweet.tweettext, teamid)
 
-        try:
-            if not self.in_db(tweet.tweetid):
+                    ses.add(query)
+                    ses.commit()
+
+                else:
+                    if verbose == True:
+                        print "Tweet %s is already in the database." % tweet.tweetid
+            except:
                 if verbose == True:
-                    print "Adding %s: %s to database for %s." % (tweet.username, tweet.tweettext, teamid)
-
-                ff.db.session.add(query)
-                ff.db.session.commit()
-
-            else:
-                if verbose == True:
-                    print "Tweet %s is already in the database." % tweet.tweetid
-        except:
-            if verbose == True:
-                print "Could not add %s to database." % (tweet.tweetid)
-                print "Error:", sys.exc_info()
-                ff.db.session.rollback()
+                    print "Could not add %s to database." % (tweet.tweetid)
+                    print "Error:", sys.exc_info()
+                    ses.rollback()
 
     def search_historic(self, search, start, end, live=True, verbose=False):
         ''' Finds historic tweets and adds them to the database
@@ -403,15 +404,16 @@ class Twitter:
     def tweet_gameid(self, tweetid):
         ''' Returns the game id for a tweet in database
         '''
-        result = ff.db.session.query(ff.db.tweets, ff.db.schedule).\
-            join(ff.db.schedule, sql.or_(
-                ff.db.tweets.teamid == ff.db.schedule.hometeam,
-                ff.db.tweets.teamid == ff.db.schedule.awayteam)).\
-            filter(ff.db.tweets.tweetid == tweetid).\
-            filter(ff.db.tweets.postedtime.between(
-                sql.text('schedule.starttime - INTERVAL 1 HOUR'),
-                sql.text('schedule.starttime + INTERVAL 4 HOUR'))).first()
+        with ff.db.con() as ses:
+            result = ses.query(ff.db.tweets, ff.db.schedule).\
+                join(ff.db.schedule, sql.or_(
+                    ff.db.tweets.teamid == ff.db.schedule.hometeam,
+                    ff.db.tweets.teamid == ff.db.schedule.awayteam)).\
+                filter(ff.db.tweets.tweetid == tweetid).\
+                filter(ff.db.tweets.postedtime.between(
+                    sql.text('schedule.starttime - INTERVAL 1 HOUR'),
+                    sql.text('schedule.starttime + INTERVAL 4 HOUR'))).first()
 
-        if hasattr(result, 'Schedule'):
-            return result.Schedule.gameid
-        return None
+            if hasattr(result, 'Schedule'):
+                return result.Schedule.gameid
+            return None

@@ -1,8 +1,10 @@
+from contextlib import contextmanager
 import secrets as sec
 import sqlalchemy as sql
 from sqlalchemy.orm import scoped_session, sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import Column, Integer, String, DateTime
+
 
 class DB:
     ''' Database handling
@@ -11,13 +13,22 @@ class DB:
     def __init__(self):
         ''' Creates database engine
         '''
-        self.enginestr = 'mysql+pymysql://%s:%s@%s/NFL?charset=utf8mb4&use_unicode=1' % (
+        self.enginestr = 'mysql+pymysql://%s:%s@%s:3306/NFL?charset=utf8mb4&use_unicode=1' % (
             sec.mysqluser, sec.mysqlpwd, sec.mysqlhost)
-        self.engine = sql.create_engine(self.enginestr)
-
-        self.session = scoped_session(sessionmaker(bind=self.engine))
+        self.engine = sql.create_engine(self.enginestr, pool_recycle=86400)
+        self.Session = sessionmaker(bind=self.engine)
         self.Base = declarative_base()
-        self.Base.query = self.session.query_property()
+
+    @contextmanager
+    def con(self):
+        session = scoped_session(self.Session)
+        try:
+            yield session
+        except:
+            session.rollback()
+        finally:
+            session.close()
+
 
 class Schedule(DB().Base):
     __tablename__ = 'schedule'

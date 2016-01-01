@@ -171,10 +171,10 @@ class Schedule:
                 sched[g]['home'] = 'JAX'
 
             if (sched[g]['home'] == hometeam
-                        and sched[g]['away'] == awayteam
-                        and sched[g]['year'] == int(year)
-                        and sched[g]['month'] == int(month)
-                        and sched[g]['day'] == int(day)
+                    and sched[g]['away'] == awayteam
+                    and sched[g]['year'] == int(year)
+                    and sched[g]['month'] == int(month)
+                    and sched[g]['day'] == int(day)
                     ):
                 return (sched[g]['gamekey'],
                         sched[g]['eid'],
@@ -324,38 +324,44 @@ class Schedule:
                                starttime=row[
                                    'starttime'] if 'starttime' in row.index else None
                                )
-        try:
-            ff.db.session.add(query)
-            ff.db.session.commit()
-        except:
-            print "Could not add %s to database" % row['gameid']
-            print "Error:", sys.exc_info()
-            ff.db.session.rollback()
+        with ff.db.con() as ses:
+            try:
+                ses.add(query)
+                ses.commit()
+            except:
+                print "Could not add %s to database" % row['gameid']
+                print "Error:", sys.exc_info()
+                ses.rollback()
 
     def add_pfr_info(self, gameid, info):
         ''' Adds Pro-Football Reference info to database
         '''
-        table = ff.db.session.query(ff.db.schedule).get(gameid)
+        with ff.db.con() as ses:
+            table = ses.query(ff.db.schedule).get(gameid)
 
-        table.starttime = info['starttime'] if info.has_key(
-            'starttime') else None
-        table.endtime = info['endtime'] if info.has_key('endtime') else None
-        table.stadium = info['stadium'] if info.has_key('stadium') else None
-        table.weather = info['weather'] if info.has_key('weather') else None
-        table.wontoss = info['wontoss'] if info.has_key('wontoss') else None
-        table.attendance = info['attendance'] if info.has_key(
-            'attendance') else None
-        table.vegasline = info['vegasline'] if info.has_key(
-            'vegasline') else None
-        table.overunder = info['overunder'] if info.has_key(
-            'overunder') else None
+            table.starttime = info['starttime'] if info.has_key(
+                'starttime') else None
+            table.endtime = info['endtime'] if info.has_key(
+                'endtime') else None
+            table.stadium = info['stadium'] if info.has_key(
+                'stadium') else None
+            table.weather = info['weather'] if info.has_key(
+                'weather') else None
+            table.wontoss = info['wontoss'] if info.has_key(
+                'wontoss') else None
+            table.attendance = info['attendance'] if info.has_key(
+                'attendance') else None
+            table.vegasline = info['vegasline'] if info.has_key(
+                'vegasline') else None
+            table.overunder = info['overunder'] if info.has_key(
+                'overunder') else None
 
-        try:
-            ff.db.session.commit()
-        except:
-            print "Could not update %s PFR info." % gameid
-            print "Error:", sys.exc_info()
-            ff.db.session.rollback()
+            try:
+                ses.commit()
+            except:
+                print "Could not update %s PFR info." % gameid
+                print "Error:", sys.exc_info()
+                ses.rollback()
 
     def update_db(self):
         ''' Updates schedule table of database
@@ -383,8 +389,9 @@ class Schedule:
     def game_info(self, gameid):
         ''' Returns info for game id
         '''
-        result = ff.db.schedule.query.filter_by(gameid=gameid).one()
-        return result.__dict__
+        with ff.db.con() as ses:
+            result = ses.query(ff.db.schedule).filter_by(gameid=gameid).one()
+            return result.__dict__
 
     def all_games(self):
         ''' Returns dataframe of all games
@@ -416,28 +423,30 @@ class Schedule:
     def gameid_from_team_time(self, teamid, postedtime):
         ''' Returns gameid from a teamid and posted time
         '''
-        result = ff.db.session.query(ff.db.schedule).\
-            filter(sql.or_(
-                teamid == ff.db.schedule.hometeam,
-                teamid == ff.db.schedule.awayteam)).\
-            filter(sql.and_(
-                    sql.text(':postedtime > schedule.starttime - INTERVAL 1 HOUR').\
+        with ff.db.con() as ses:
+            result = ses.query(ff.db.schedule).\
+                filter(sql.or_(
+                    teamid == ff.db.schedule.hometeam,
+                    teamid == ff.db.schedule.awayteam)).\
+                filter(sql.and_(
+                    sql.text(':postedtime > schedule.starttime - INTERVAL 1 HOUR').
                     bindparams(postedtime=postedtime),
-                    sql.text(':postedtime < schedule.starttime + INTERVAL 4 HOUR').\
+                    sql.text(':postedtime < schedule.starttime + INTERVAL 4 HOUR').
                     bindparams(postedtime=postedtime))).first()
 
-        if hasattr(result, 'gameid'):
-            return result.gameid
-        return None
+            if hasattr(result, 'gameid'):
+                return result.gameid
+            return None
 
     def tweet_count(self, gameid):
         ''' Returns the tweet count for a game
         '''
         info = self.game_info(gameid)
-        result = ff.db.session.query(ff.db.tweets).\
-            filter(ff.db.tweets.gameid == gameid).\
-            filter(ff.db.tweets.sent_compound != 0).count()
-        return result
+        with ff.db.con() as ses:
+            result = ses.query(ff.db.tweets).\
+                filter(ff.db.tweets.gameid == gameid).\
+                filter(ff.db.tweets.sent_compound != 0).count()
+            return result
 
     def all_tweet_counts(self):
         ''' Returns game information with tweet counts for all games
