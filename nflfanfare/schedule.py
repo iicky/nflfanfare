@@ -301,16 +301,18 @@ class Schedule:
     def in_db(self, gameid):
         ''' Returns true if gameid is in database
         '''
-        result = ff.db.schedule.query.filter_by(gameid=gameid)
-        return ff.db.session.query(result.exists()).scalar()
+        with ff.db.con() as ses:
+            result = ses.query(ff.db.schedule).filter_by(gameid=gameid)
+            return ses.query(result.exists()).scalar()
 
     def is_complete(self, gameid):
         ''' Returns true if gameid is in database
         '''
-        result = ff.db.schedule.query.filter_by(gameid=gameid).one()
-        if not result.endtime == None:
-            return True
-        return False
+        with ff.db.con() as ses:
+            result = ses.query(ff.db.schedule).filter_by(gameid=gameid).one()
+            if not result.endtime == None:
+                return True
+            return False
 
     def add_game(self, row):
         ''' Adds game to database
