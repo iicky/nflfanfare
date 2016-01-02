@@ -47,6 +47,9 @@ class Schedule(DB().Base):
     attendance = Column(String)
     vegasline = Column(String)
     overunder = Column(String)
+    hometweets = Column(String)
+    awaytweets = Column(String)
+    totaltweets = Column(String)
 
     def __init__(self, gameid=None,
                  eid=None,
@@ -61,7 +64,10 @@ class Schedule(DB().Base):
                  wontoss=None,
                  attendance=None,
                  vegasline=None,
-                 overunder=None):
+                 overunder=None,
+                 hometweets=None,
+                 awaytweets=None,
+                 totaltweets=None):
         self.gameid = gameid
         self.eid = eid
         self.week = week
@@ -75,6 +81,9 @@ class Schedule(DB().Base):
         self.wontoss = attendance
         self.vegasline = vegasline
         self.overunder = overunder
+        self.hometweets = hometweets
+        self.awaytweets = awaytweets
+        self.totaltweets = totaltweets
 
 
 class TeamHashtags(DB().Base):
