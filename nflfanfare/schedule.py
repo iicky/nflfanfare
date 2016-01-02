@@ -365,7 +365,7 @@ class Schedule:
                 print "Error:", sys.exc_info()
                 ses.rollback()
 
-    def update_db(self):
+    def update_db_schedule(self):
         ''' Updates schedule table of database
         '''
 
@@ -449,6 +449,28 @@ class Schedule:
                 filter(ff.db.tweets.gameid == gameid).\
                 filter(ff.db.tweets.sent_compound != 0).count()
             return result
+
+    def game_teams(self, gameid):
+        ''' Returns a dictionary of teams for a game
+        '''
+        with ff.db.con() as ses:
+            result = ses.query(ff.db.schedule).\
+                filter_by(gameid=gameid).one()
+            return {'hometeam': result.hometeam, 'awayteam': result.awayteam}
+
+    def game_tweet_counts(self, gameid):
+        ''' Returns a dictionary of tweet counts for a game
+        '''
+        teams = self.game_teams(gameid)
+        counts = {}
+        with ff.db.con() as ses:
+            for t in teams:
+                result = ses.query(ff.db.tweets).\
+                    filter_by(gameid=gameid).\
+                    filter_by(teamid=teams[t]).count()
+                counts[t] = result
+        counts['total'] = counts['hometeam'] + counts['awayteam']
+        return counts
 
     def all_tweet_counts(self):
         ''' Returns game information with tweet counts for all games
