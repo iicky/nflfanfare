@@ -2,4 +2,4 @@
 
 from nflfanfare import schedule
 
-schedule.Schedule().update_db()
+schedule.Schedule().update_db_schedule()
