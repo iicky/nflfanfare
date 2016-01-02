@@ -467,6 +467,7 @@ class Schedule:
             for t in teams:
                 result = ses.query(ff.db.tweets).\
                     filter_by(gameid=gameid).\
+                    filter(ff.db.tweets.sent_compound != 0).\
                     filter_by(teamid=teams[t]).count()
                 counts[t] = result
         counts['total'] = counts['hometeam'] + counts['awayteam']
