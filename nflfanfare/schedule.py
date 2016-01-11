@@ -188,8 +188,6 @@ class Schedule:
         if hometeam == 'JAX':
             hometeam = 'JAC'    
 
-        print hometeam, awayteam, year, week
-
         if week.isdigit():
             game = nflgame.games(year=int(year), 
                                  week=int(week), 
