@@ -9,4 +9,4 @@ del path
 
 from nflfanfare import schedule
 
-schedule.Schedule().update_db_schedule()
+schedule.Schedule().update_db_tweet_counts()
