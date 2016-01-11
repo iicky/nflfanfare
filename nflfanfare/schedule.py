@@ -24,72 +24,90 @@ class Schedule:
     def pending_games_csv(self, year):
         ''' Returns csv of pending games for year on Pro-Football Reference
         '''
-        # Open url in browser
-        url = 'http://www.pro-football-reference.com/years/%s/games.htm' % year
-        browser = webdriver.PhantomJS(executable_path='/usr/local/bin/phantomjs',
-                                      service_log_path=os.path.devnull)
-        browser.get(url)
+        try:
+            # Open url in browser
+            url = 'http://www.pro-football-reference.com/years/%s/games.htm' % year
+            browser = webdriver.PhantomJS(executable_path='/usr/local/bin/phantomjs',
+                                          service_log_path=os.path.devnull)
+            browser.get(url)
 
-        # Click button to get CSV
-        csvlink = browser.find_elements_by_xpath(
-            "//span[contains(text(), 'CSV')]")
-        csvlink[1].click()
+            # Click button to get CSV
+            csvlink = browser.find_elements_by_xpath(
+                "//span[contains(text(), 'CSV')]")
+            csvlink[1].click()
 
-        # Get the source code for page
-        html = browser.page_source.encode("utf-8")
-        soup = BeautifulSoup(html, "html.parser")
-        browser.close()
-        browser.quit()
+            # Get the source code for page
+            html = browser.page_source.encode("utf-8")
+            soup = BeautifulSoup(html, "html.parser")
+        except:
+            print "Could not access pending games from PFR."
+            return None
+        finally:
+            browser.close()
+            browser.quit()
 
-        # Find preformatted CSV
-        games = ""
-        ids = soup.find('pre', attrs={'id': 'csv_games_left'})
-        for i in ids:
-            games = i
+        try:
+            # Find preformatted CSV
+            games = ""
+            ids = soup.find('pre', attrs={'id': 'csv_games_left'})
+            for i in ids:
+                games = i
 
-        # Reformat CSV
-        games = games.split('\n')
-        csv = ''
-        for line in games:
-            if not line == '' and not re.match('Week', line):
-                csv += '%s,%s\n' % (year, line)
+            # Reformat CSV
+            games = games.split('\n')
+            csv = ''
+            for line in games:
+                if not line == '' and not re.match('Week', line):
+                    csv += '%s,%s\n' % (year, line)
 
-        return csv
+            return csv
+        except:
+            print "Could not scrape pending games from PFR."
+            return None
 
     def completed_games_csv(self, year):
         ''' Returns csv of completed games for year on Pro-Football Reference
         '''
-        # Open url in browser
-        url = 'http://www.pro-football-reference.com/years/%s/games.htm' % year
-        browser = webdriver.PhantomJS(executable_path='/usr/local/bin/phantomjs',
-                                      service_log_path=os.path.devnull)
-        browser.get(url)
+        try:
+            # Open url in browser
+            url = 'http://www.pro-football-reference.com/years/%s/games.htm' % year
+            browser = webdriver.PhantomJS(executable_path='/usr/local/bin/phantomjs',
+                                          service_log_path=os.path.devnull)
+            browser.get(url)
 
-        # Click button to get CSV
-        csvlink = browser.find_elements_by_xpath(
-            "//span[contains(text(), 'CSV')]")
-        csvlink[0].click()
+            # Click button to get CSV
+            csvlink = browser.find_elements_by_xpath(
+                "//span[contains(text(), 'CSV')]")
+            csvlink[0].click()
 
-        # Get the source code for page
-        html = browser.page_source.encode("utf-8")
-        soup = BeautifulSoup(html, "html.parser")
-        browser.close()
-        browser.quit()
+            # Get the source code for page
+            html = browser.page_source.encode("utf-8")
+            soup = BeautifulSoup(html, "html.parser")
+        except:
+            print "Could not access completed games from PFR."
+            return None
+        finally:
+            browser.close()
+            browser.quit()
 
-        # Find preformatted CSV
-        games = ""
-        ids = soup.find('pre', attrs={'id': 'csv_games'})
-        for i in ids:
-            games = i
+        try:
+            # Find preformatted CSV
+            games = ""
+            ids = soup.find('pre', attrs={'id': 'csv_games'})
+            for i in ids:
+                games = i
 
-        # Reformat CSV
-        games = games.split('\n')
-        csv = ''
-        for line in games:
-            if not line == '' and not re.match('Week', line):
-                csv += '%s,%s\n' % (year, line)
+            # Reformat CSV
+            games = games.split('\n')
+            csv = ''
+            for line in games:
+                if not line == '' and not re.match('Week', line):
+                    csv += '%s,%s\n' % (year, line)
 
-        return csv
+            return csv
+        except:
+            print "Could not scrape completed games from PFR."
+            return None
 
     def pfr_boxscore_link(self, year, month, day, pfrid):
         ''' Returns a Pro-Football Reference boxscore link
