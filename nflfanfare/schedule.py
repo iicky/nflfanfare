@@ -209,6 +209,8 @@ class Schedule:
         '''
 
         csv = self.completed_games_csv(year)
+        if csv == None:
+            return None
 
         # Read into pandas dataframe
         columns = ['year', 'week', 'date', 'winner',
@@ -259,6 +261,8 @@ class Schedule:
         ''' Returns pending games csv as data frame
         '''
         csv=self.pending_games_csv(year)
+        if csv == None:
+            return None
 
         # Read into pandas dataframe
         columns=['year', 'week', 'date', 'awayteam', 'hometeam', 'time']
@@ -388,24 +392,25 @@ class Schedule:
         ''' Updates schedule table of database
         '''
 
-        cdf=self.completed_games_df('2015')
-        pdf=self.pending_games_df('2015')
+        cdf = self.completed_games_df('2015')
+        pdf = self.pending_games_df('2015')
 
-        for i, row in cdf.iterrows():
+        if not cdf == None:
+            for i, row in cdf.iterrows():
 
-            if not self.in_db(row['gameid']):
-                self.add_game(row)
+                if not self.in_db(row['gameid']):
+                    self.add_game(row)
 
-            # Update game with PFR info
-            if not self.is_complete(row['gameid']):
-                info=self.pfr_game_info(row['boxscore'])
-                if info.has_key('endtime'):
-                    self.add_pfr_info(row['gameid'], info)
+                # Update game with PFR info
+                if not self.is_complete(row['gameid']):
+                    info=self.pfr_game_info(row['boxscore'])
+                    if info.has_key('endtime'):
+                        self.add_pfr_info(row['gameid'], info)
+        if not pdf == None:
+            for i, row in pdf.iterrows():
 
-        for i, row in pdf.iterrows():
-
-            if not self.in_db(row['gameid']):
-                self.add_game(row)
+                if not self.in_db(row['gameid']):
+                    self.add_game(row)
 
     def game_info(self, gameid):
         ''' Returns info for game id
