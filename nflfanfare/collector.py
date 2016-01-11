@@ -65,7 +65,10 @@ class Collector:
         hashtags = ff.team.team_hashtags(teamid)
 
         for hashtag in hashtags:
-            ff.twitter.search_historic(hashtag, pre, post, verbose=verbose)
+            if method == 'api':
+                ff.twitter.search_historic(hashtag, pre, post, verbose=verbose)
+            elif method == 'scrape':
+                ff.twitter.scrape_historic(hashtag, pre, post, verbose=verbose)
 
     def collect_recent(self, gameid, verbose=False):
         ''' Collects tweets for a recent game
