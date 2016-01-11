@@ -56,7 +56,7 @@ class Collector:
             elif method == 'scrape':
                 ff.twitter.scrape_historic(hashtag, pre, post, verbose=verbose)
 
-    def collect_historic_by_team(self, gameid, teamid, verbose=False):
+    def collect_historic_by_team(self, gameid, teamid, method='api', verbose=False):
         ''' Collects tweets for a historic game given a team
         '''
         info = ff.sched.game_info(gameid)
