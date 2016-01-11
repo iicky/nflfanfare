@@ -57,8 +57,8 @@ class Schedule:
             csv = ''
             for line in games:
                 if (not line == ''
-                    and not line[0] == ','
-                    and not 'Week' in line):
+                        and not line[0] == ','
+                        and not 'Week' in line):
                     csv += '%s,%s\n' % (year, line)
 
             return csv
@@ -102,9 +102,9 @@ class Schedule:
             csv = ''
             for line in games:
                 if (not line == ''
-                    and not line[0] == ','
-                    and not 'Week' in line):
-                        csv += '%s,%s\n' % (year, line)
+                        and not line[0] == ','
+                        and not 'Week' in line):
+                    csv += '%s,%s\n' % (year, line)
 
             return csv
         except:
@@ -184,17 +184,17 @@ class Schedule:
         if awayteam == 'JAX':
             awayteam = 'JAC'
         if hometeam == 'JAX':
-            hometeam = 'JAC'    
+            hometeam = 'JAC'
 
         if week.isdigit():
-            game = nflgame.games(year=int(year), 
-                                 week=int(week), 
-                                 home=hometeam, 
+            game = nflgame.games(year=int(year),
+                                 week=int(week),
+                                 home=hometeam,
                                  away=awayteam)[0]
         else:
-            game = nflgame.games(year=int(year), 
-                                 kind='POST', 
-                                 home=hometeam, 
+            game = nflgame.games(year=int(year),
+                                 kind='POST',
+                                 home=hometeam,
                                  away=awayteam)[0]
         return (game.gamekey,
                 game.eid,
@@ -235,85 +235,85 @@ class Schedule:
                                                       row['awayteam'],
                                                       row['year'],
                                                       row['week']), axis=1)
-        df['gameid']=info.str.get(0)
-        df['eid']=info.str.get(1)
-        df['seasontype']=info.str.get(2)
+        df['gameid'] = info.str.get(0)
+        df['eid'] = info.str.get(1)
+        df['seasontype'] = info.str.get(2)
 
         # Year offset fix
-        df['year']=df.apply(lambda row: row['year'] +
+        df['year'] = df.apply(lambda row: row['year'] +
                               1 if row['month'] < 7 else row['year'], axis=1)
 
         # Gets PFRID and boxscore links for hometeams
-        df['pfrid']=df.hometeam.apply(ff.team.pfrid_from_teamid)
-        df['boxscore']=df.apply(lambda row: self.pfr_boxscore_link(row['year'],
+        df['pfrid'] = df.hometeam.apply(ff.team.pfrid_from_teamid)
+        df['boxscore'] = df.apply(lambda row: self.pfr_boxscore_link(row['year'],
                                                                      row['month'],
                                                                      row['day'],
                                                                      row['pfrid']), axis=1)
-        df['completed']=True
+        df['completed'] = True
 
         return df
 
     def pending_games_df(self, year):
         ''' Returns pending games csv as data frame
         '''
-        csv=self.pending_games_csv(year)
+        csv = self.pending_games_csv(year)
         if csv == None:
             return pd.DataFrame()
 
         # Read into pandas dataframe
-        columns=['year', 'week', 'date', 'awayteam', 'hometeam', 'time']
-        df=pd.read_csv(StringIO(csv), usecols=[
+        columns = ['year', 'week', 'date', 'awayteam', 'hometeam', 'time']
+        df = pd.read_csv(StringIO(csv), usecols=[
             0, 1, 3, 4, 6, 7], names=columns)
 
         # Change hometeam and awayteam columns to team IDs
-        df['hometeam']=df.hometeam.apply(ff.team.teamid_from_name)
-        df['awayteam']=df.awayteam.apply(ff.team.teamid_from_name)
+        df['hometeam'] = df.hometeam.apply(ff.team.teamid_from_name)
+        df['awayteam'] = df.awayteam.apply(ff.team.teamid_from_name)
 
         # Creates month and day columns
-        df['month']=df.date.str.split(' ').str.get(0)
-        df['month']=df.month.apply(
+        df['month'] = df.date.str.split(' ').str.get(0)
+        df['month'] = df.month.apply(
             lambda d: datetime.strptime(d, '%B').month)
-        df['day']=df.date.str.split(' ').str.get(1)
+        df['day'] = df.date.str.split(' ').str.get(1)
 
         # Gets nflgame information
-        info=df.apply(lambda row: self.nflgame_info(row['hometeam'],
+        info = df.apply(lambda row: self.nflgame_info(row['hometeam'],
                                                       row['awayteam'],
                                                       row['year'],
                                                       row['week']), axis=1)
-        df['gameid']=info.str.get(0)
-        df['eid']=info.str.get(1)
-        df['seasontype']=info.str.get(2)
+        df['gameid'] = info.str.get(0)
+        df['eid'] = info.str.get(1)
+        df['seasontype'] = info.str.get(2)
 
         # Year offset fix
-        df['year']=df.apply(lambda row: row['year'] +
+        df['year'] = df.apply(lambda row: row['year'] +
                               1 if row['month'] < 7 else row['year'], axis=1)
 
         # Gets PFRID and boxscore links for hometeams
-        df['pfrid']=df.hometeam.apply(ff.team.pfrid_from_teamid)
-        df['boxscore']=df.apply(lambda row: self.pfr_boxscore_link(row['year'],
+        df['pfrid'] = df.hometeam.apply(ff.team.pfrid_from_teamid)
+        df['boxscore'] = df.apply(lambda row: self.pfr_boxscore_link(row['year'],
                                                                      row['month'],
                                                                      row['day'],
                                                                      row['pfrid']), axis=1)
 
         # Convert starttime to date
-        df['starttime']=df.apply(lambda row: self.start_time(row['year'],
+        df['starttime'] = df.apply(lambda row: self.start_time(row['year'],
                                                                row['date'],
                                                                row['time']), axis=1)
 
-        df['completed']=False
+        df['completed'] = False
 
         return df
 
     def start_time(self, year, date, time):
         ''' Returns game starttime as a string
         '''
-        starttime='%s, %s %s' % (date, year, time)
+        starttime = '%s, %s %s' % (date, year, time)
 
         # Creating dates
-        starttime=datetime.strptime(starttime, '%B %d, %Y %I:%M %p')
-        starttime=pytz.timezone('US/Eastern').localize(starttime)
-        starttime=starttime.astimezone(pytz.timezone('UTC'))
-        starttime=starttime.replace(tzinfo=None)
+        starttime = datetime.strptime(starttime, '%B %d, %Y %I:%M %p')
+        starttime = pytz.timezone('US/Eastern').localize(starttime)
+        starttime = starttime.astimezone(pytz.timezone('UTC'))
+        starttime = starttime.replace(tzinfo=None)
 
         return str(starttime)
 
@@ -321,14 +321,14 @@ class Schedule:
         ''' Returns true if gameid is in database
         '''
         with ff.db.con() as ses:
-            result=ses.query(ff.db.schedule).filter_by(gameid=gameid)
+            result = ses.query(ff.db.schedule).filter_by(gameid=gameid)
             return ses.query(result.exists()).scalar()
 
     def is_complete(self, gameid):
         ''' Returns true if gameid is in database
         '''
         with ff.db.con() as ses:
-            result=ses.query(ff.db.schedule).filter_by(gameid=gameid).one()
+            result = ses.query(ff.db.schedule).filter_by(gameid=gameid).one()
             if not result.endtime == None:
                 return True
             return False
@@ -336,15 +336,15 @@ class Schedule:
     def add_game(self, row):
         ''' Adds game to database
         '''
-        query=ff.db.schedule(gameid=row['gameid'],
+        query = ff.db.schedule(gameid=row['gameid'],
                                eid=row['eid'],
                                week=row['week'],
                                seasontype=row['seasontype'],
                                hometeam=row['hometeam'],
                                awayteam=row['awayteam'],
                                starttime=row[
-                                   'starttime'] if 'starttime' in row.index else None
-                               )
+            'starttime'] if 'starttime' in row.index else None
+        )
         with ff.db.con() as ses:
             try:
                 ses.add(query)
@@ -358,23 +358,23 @@ class Schedule:
         ''' Adds Pro-Football Reference info to database
         '''
         with ff.db.con() as ses:
-            table=ses.query(ff.db.schedule).get(gameid)
+            table = ses.query(ff.db.schedule).get(gameid)
 
-            table.starttime=info['starttime'] if info.has_key(
+            table.starttime = info['starttime'] if info.has_key(
                 'starttime') else None
-            table.endtime=info['endtime'] if info.has_key(
+            table.endtime = info['endtime'] if info.has_key(
                 'endtime') else None
-            table.stadium=info['stadium'] if info.has_key(
+            table.stadium = info['stadium'] if info.has_key(
                 'stadium') else None
-            table.weather=info['weather'] if info.has_key(
+            table.weather = info['weather'] if info.has_key(
                 'weather') else None
-            table.wontoss=info['wontoss'] if info.has_key(
+            table.wontoss = info['wontoss'] if info.has_key(
                 'wontoss') else None
-            table.attendance=info['attendance'] if info.has_key(
+            table.attendance = info['attendance'] if info.has_key(
                 'attendance') else None
-            table.vegasline=info['vegasline'] if info.has_key(
+            table.vegasline = info['vegasline'] if info.has_key(
                 'vegasline') else None
-            table.overunder=info['overunder'] if info.has_key(
+            table.overunder = info['overunder'] if info.has_key(
                 'overunder') else None
 
             try:
@@ -398,7 +398,7 @@ class Schedule:
 
                 # Update game with PFR info
                 if not self.is_complete(row['gameid']):
-                    info=self.pfr_game_info(row['boxscore'])
+                    info = self.pfr_game_info(row['boxscore'])
                     if info.has_key('endtime'):
                         self.add_pfr_info(row['gameid'], info)
         if not pdf.empty:
@@ -410,41 +410,41 @@ class Schedule:
         ''' Returns info for game id
         '''
         with ff.db.con() as ses:
-            result=ses.query(ff.db.schedule).filter_by(gameid=gameid).one()
+            result = ses.query(ff.db.schedule).filter_by(gameid=gameid).one()
             return result.__dict__
 
     def all_games(self):
         ''' Returns dataframe of all games
         '''
-        df=pd.read_sql_table('schedule', ff.db.engine)
+        df = pd.read_sql_table('schedule', ff.db.engine)
         return df
 
     def completed_games(self):
         ''' Returns dataframe of completed games
         '''
-        df=pd.read_sql_table('schedule', ff.db.engine)
-        df=df[pd.notnull(df.endtime)]
+        df = pd.read_sql_table('schedule', ff.db.engine)
+        df = df[pd.notnull(df.endtime)]
         return df if not df.empty else None
 
     def pending_games(self):
         ''' Returns dataframe of pending games
         '''
-        df=pd.read_sql_table('schedule', ff.db.engine)
-        df=df[pd.isnull(df.endtime)]
+        df = pd.read_sql_table('schedule', ff.db.engine)
+        df = df[pd.isnull(df.endtime)]
         return df if not df.empty else None
 
     def pre_post_times(self, starttime):
         ''' Returns timedelta of pregame and postgame times
         '''
-        pregame=starttime - timedelta(hours=1)
-        postgame=starttime + timedelta(hours=4)
+        pregame = starttime - timedelta(hours=1)
+        postgame = starttime + timedelta(hours=4)
         return (pregame, postgame)
 
     def gameid_from_team_time(self, teamid, postedtime):
         ''' Returns gameid from a teamid and posted time
         '''
         with ff.db.con() as ses:
-            result=ses.query(ff.db.schedule).\
+            result = ses.query(ff.db.schedule).\
                 filter(sql.or_(
                     teamid == ff.db.schedule.hometeam,
                     teamid == ff.db.schedule.awayteam)).\
@@ -461,9 +461,9 @@ class Schedule:
     def tweet_count(self, gameid):
         ''' Returns the tweet count for a game
         '''
-        info=self.game_info(gameid)
+        info = self.game_info(gameid)
         with ff.db.con() as ses:
-            result=ses.query(ff.db.tweets).\
+            result = ses.query(ff.db.tweets).\
                 filter(ff.db.tweets.gameid == gameid).\
                 filter(ff.db.tweets.sent_compound != 0).count()
             return result
@@ -472,29 +472,55 @@ class Schedule:
         ''' Returns a dictionary of teams for a game
         '''
         with ff.db.con() as ses:
-            result=ses.query(ff.db.schedule).\
+            result = ses.query(ff.db.schedule).\
                 filter_by(gameid=gameid).one()
             return {'hometeam': result.hometeam, 'awayteam': result.awayteam}
 
     def game_tweet_counts(self, gameid):
         ''' Returns a dictionary of tweet counts for a game
         '''
-        teams=self.game_teams(gameid)
-        counts={}
+        teams = self.game_teams(gameid)
+        counts = {}
         with ff.db.con() as ses:
             for t in teams:
-                result=ses.query(ff.db.tweets).\
+                result = ses.query(ff.db.tweets).\
                     filter_by(gameid=gameid).\
                     filter(ff.db.tweets.sent_compound != 0).\
                     filter_by(teamid=teams[t]).count()
-                counts[t]=result
-        counts['total']=counts['hometeam'] + counts['awayteam']
+                counts[t] = result
+        counts['total'] = counts['hometeam'] + counts['awayteam']
         return counts
+
+    def update_game_tweet_counts(self, gameid):
+        ''' Updates tweet counts in database for a gameid
+        '''
+        with ff.db.con() as ses:
+            counts = self.game_tweet_counts(gameid)
+            
+            table = ses.query(ff.db.schedule).get(gameid)
+            table.hometweets = counts['hometeam']
+            table.awaytweets = counts['awayteam']
+            table.totaltweets = counts['total']
+
+            try:
+                ses.commit()
+            except:
+                print "Could not update %s tweet counts." % gameid
+                print "Error:", sys.exc_info()
+                ses.rollback()
+
+    def update_db_tweet_counts(self):
+        ''' Updates tweet counts for games in the database
+        '''
+        with ff.db.con() as ses:
+            games = ses.query(ff.db.schedule).all()
+            for g in games:
+                self.update_game_tweet_counts(g.gameid)
 
     def all_tweet_counts(self):
         ''' Returns game information with tweet counts for all games
         '''
-        query="""SELECT *,
+        query = """SELECT *,
                    CASE
                    WHEN s.gameid NOT IN (SELECT gameid FROM tweets
                                          WHERE gameid IS NOT NULL)
@@ -505,17 +531,17 @@ class Schedule:
                    END as tweetcount
                    FROM schedule s
                 """
-        result=pd.read_sql_query(query, ff.db.engine)
+        result = pd.read_sql_query(query, ff.db.engine)
         return result
 
     def game_status(self, gameid):
         ''' Returns game status
         '''
-        start=self.game_info(gameid)['starttime']
-        pre, post=self.pre_post_times(start)
-        now=datetime.utcnow()
-        oneweek=now - timedelta(days=7)
-        upcoming=now + timedelta(hours=1)
+        start = self.game_info(gameid)['starttime']
+        pre, post = self.pre_post_times(start)
+        now = datetime.utcnow()
+        oneweek = now - timedelta(days=7)
+        upcoming = now + timedelta(hours=1)
 
         if pre < oneweek:   # Historic game (> 1 week)
             return "historic"
