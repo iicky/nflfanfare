@@ -40,7 +40,6 @@ class Schedule:
             html = browser.page_source.encode("utf-8")
             soup = BeautifulSoup(html, "html.parser")
         except:
-            print "Could not access pending games from PFR."
             return None
         finally:
             browser.close()
@@ -86,7 +85,6 @@ class Schedule:
             html = browser.page_source.encode("utf-8")
             soup = BeautifulSoup(html, "html.parser")
         except:
-            print "Could not access completed games from PFR."
             return None
         finally:
             browser.close()
@@ -208,7 +206,7 @@ class Schedule:
 
         csv = self.completed_games_csv(year)
         if csv == None:
-            return None
+            return pd.DataFrame()
 
         # Read into pandas dataframe
         columns = ['year', 'week', 'date', 'winner',
@@ -260,7 +258,7 @@ class Schedule:
         '''
         csv=self.pending_games_csv(year)
         if csv == None:
-            return None
+            return pd.DataFrame()
 
         # Read into pandas dataframe
         columns=['year', 'week', 'date', 'awayteam', 'hometeam', 'time']
@@ -393,9 +391,8 @@ class Schedule:
         cdf = self.completed_games_df('2015')
         pdf = self.pending_games_df('2015')
 
-        if not cdf == None:
+        if not cdf.empty:
             for i, row in cdf.iterrows():
-
                 if not self.in_db(row['gameid']):
                     self.add_game(row)
 
@@ -404,9 +401,8 @@ class Schedule:
                     info=self.pfr_game_info(row['boxscore'])
                     if info.has_key('endtime'):
                         self.add_pfr_info(row['gameid'], info)
-        if not pdf == None:
+        if not pdf.empty:
             for i, row in pdf.iterrows():
-
                 if not self.in_db(row['gameid']):
                     self.add_game(row)
 
