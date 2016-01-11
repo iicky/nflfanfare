@@ -57,7 +57,9 @@ class Schedule:
             games = games.split('\n')
             csv = ''
             for line in games:
-                if not line == '' and not re.match('Week', line):
+                if (not line == '' 
+                    and not line[0] == ','
+                    and not 'Week' in line):
                     csv += '%s,%s\n' % (year, line)
 
             return csv
@@ -101,8 +103,10 @@ class Schedule:
             games = games.split('\n')
             csv = ''
             for line in games:
-                if not line == '' and not re.match('Week', line):
-                    csv += '%s,%s\n' % (year, line)
+                if (not line == '' 
+                    and not line[0] == ','
+                    and not 'Week' in line):
+                        csv += '%s,%s\n' % (year, line)
 
             return csv
         except:
