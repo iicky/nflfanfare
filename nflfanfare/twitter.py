@@ -79,26 +79,29 @@ class Twitter:
     def scrapeid(self, username, tweetid):
         ''' Returns JSON object for scraped tweet by id
         '''
-        url = 'https://mobile.twitter.com/%s/status/%s' % (username, tweetid)
+        try:
+            url = 'https://mobile.twitter.com/%s/status/%s' % (username, tweetid)
 
-        if platform.system() == 'Linux':
-            display = Display(visible=0, size=(800, 600))
-            display.start()
+            if platform.system() == 'Linux':
+                display = Display(visible=0, size=(800, 600))
+                display.start()
 
-        # Open URL in Chrome driver
-        browser = webdriver.Chrome()
-        browser.get(url)
-        time.sleep(np.random.lognormal(1, .5, 1)[0])
+            # Open URL in Chrome driver
+            browser = webdriver.Chrome()
+            browser.get(url)
+            time.sleep(np.random.lognormal(1, .5, 1)[0])
 
-        # Get the source code for page
-        html = browser.page_source.encode("utf-8")
-        soup = BeautifulSoup(html, "html.parser")
-
-        # Clean up
-        browser.close()
-        browser.quit()
-        if platform.system() == 'Linux':
-            display.stop()
+            # Get the source code for page
+            html = browser.page_source.encode("utf-8")
+            soup = BeautifulSoup(html, "html.parser")
+        except:
+            pass
+        finally:
+            # Clean up
+            browser.close()
+            browser.quit()
+            if platform.system() == 'Linux':
+                display.stop()
 
         # Get json
         try:
@@ -193,59 +196,62 @@ class Twitter:
         url += 'since%%3A%s%%20' % start
         url += 'until%%3A%s&src=typd' % end
 
-        # Open url in browser
-        browser = webdriver.PhantomJS(executable_path='/usr/local/bin/phantomjs',
-                                      service_log_path=os.path.devnull)
-        browser.get(url)
+        try:
+            # Open url in browser
+            browser = webdriver.PhantomJS(executable_path='/usr/local/bin/phantomjs',
+                                          service_log_path=os.path.devnull)
+            browser.get(url)
 
-        # Pretend to be a human
-        time.sleep(np.random.lognormal(1, .5, 1)[0])
-
-        i = 1
-        while True:
-
-            print "Scraping page %s for %s... %s" % (i, urllib2.unquote(search), url)
-
-            # Get the source code for page
-            html = browser.page_source.encode("utf-8")
-            soup = BeautifulSoup(html, "html.parser")
-
-            # Scrape tweets on page
-            tweetids = soup.find_all('a', class_='last')
-
-            for tweetid in tweetids:
-                tweetid = tweetid.attrs['href'].split('/')[3]
-                if self.in_db(tweetid):
-                    if verbose:
-                        print "Tweet %s has already been collected" % tweetid
-                    continue
-                try:
-                    responses = self.searchid(tweetid)
-                    for response in responses:
-                        tweet = ff.tweet.Tweet(response)
-                        if not tweet.retweeted:
-                            self.add_to_db(tweet, team, verbose=verbose)
-                except:
-                    if verbose == True:
-                        print "Could not collect tweet %s." % (tweet.tweetid)
-                        print "Error:", sys.exc_info()
-                    pass
-
-            # Get the next page button and exit if does not exit
-            loadmore = browser.find_elements_by_xpath(
-                "//a[contains(text(), ' Load older Tweets ')]")
-            if len(loadmore) == 0:
-                print "End of results."
-                break
-
-            # Click the button
-            button = loadmore[0]
+            # Pretend to be a human
             time.sleep(np.random.lognormal(1, .5, 1)[0])
-            button.click()
-            i += 1
 
-        browser.close()
-        browser.quit()
+            i = 1
+            while True:
+
+                print "Scraping page %s for %s... %s" % (i, urllib2.unquote(search), url)
+
+                # Get the source code for page
+                html = browser.page_source.encode("utf-8")
+                soup = BeautifulSoup(html, "html.parser")
+
+                # Scrape tweets on page
+                tweetids = soup.find_all('a', class_='last')
+
+                for tweetid in tweetids:
+                    tweetid = tweetid.attrs['href'].split('/')[3]
+                    if self.in_db(tweetid):
+                        if verbose:
+                            print "Tweet %s has already been collected" % tweetid
+                        continue
+                    try:
+                        responses = self.searchid(tweetid)
+                        for response in responses:
+                            tweet = ff.tweet.Tweet(response)
+                            if not tweet.retweeted:
+                                self.add_to_db(tweet, team, verbose=verbose)
+                    except:
+                        if verbose == True:
+                            print "Could not collect tweet %s." % (tweet.tweetid)
+                            print "Error:", sys.exc_info()
+                        pass
+
+                # Get the next page button and exit if does not exit
+                loadmore = browser.find_elements_by_xpath(
+                    "//a[contains(text(), ' Load older Tweets ')]")
+                if len(loadmore) == 0:
+                    print "End of results."
+                    break
+
+                # Click the button
+                button = loadmore[0]
+                time.sleep(np.random.lognormal(1, .5, 1)[0])
+                button.click()
+                i += 1
+        except:
+            pass
+        finally:
+            browser.close()
+            browser.quit()
 
     def scrape_historic(self, search, start, end, live=True, verbose=False):
         ''' Scrapes historic tweets and adds them to the database
@@ -282,60 +288,63 @@ class Twitter:
         url += 'since%%3A%s%%20' % start
         url += 'until%%3A%s&src=typd' % end
 
-        # Open url in browser
-        browser = webdriver.PhantomJS(executable_path='/usr/local/bin/phantomjs',
-                                      service_log_path=os.path.devnull)
-        browser.get(url)
+        try:
+            # Open url in browser
+            browser = webdriver.PhantomJS(executable_path='/usr/local/bin/phantomjs',
+                                          service_log_path=os.path.devnull)
+            browser.get(url)
 
-        # Pretend to be a human
-        time.sleep(np.random.lognormal(1, .5, 1)[0])
-
-        i = 1
-        while True:
-
-            print "Scraping page %s for %s... %s" % (i, urllib2.unquote(search), url)
-
-            # Get the source code for page
-            html = browser.page_source.encode("utf-8")
-            soup = BeautifulSoup(html, "html.parser")
-
-            # Scrape tweets on page
-            tweetids = soup.find_all('a', class_='last')
-
-            for tweet in tweetids:
-                tweet = tweet.attrs['href'].split('/')
-                tweetid = tweet[3]
-                username = tweet[1]
-                if self.in_db(tweetid):
-                    if verbose:
-                        print "Tweet %s has already been collected" % tweetid
-                    continue
-                try:
-                    response = self.scrapeid(username, tweetid)
-                    tweet = ff.tweet.Scrape(response)
-                    if not tweet.retweeted:
-                        self.add_to_db(tweet, team, verbose=verbose)
-                except:
-                    if verbose == True:
-                        print "Could not collect tweet %s." % (tweetid)
-                        print "Error:", sys.exc_info()
-                    pass
-
-            # Get the next page button and exit if does not exit
-            loadmore = browser.find_elements_by_xpath(
-                "//a[contains(text(), ' Load older Tweets ')]")
-            if len(loadmore) == 0:
-                print "End of results."
-                break
-
-            # Click the button
-            button = loadmore[0]
+            # Pretend to be a human
             time.sleep(np.random.lognormal(1, .5, 1)[0])
-            button.click()
-            i += 1
 
-        browser.close()
-        browser.quit()
+            i = 1
+            while True:
+
+                print "Scraping page %s for %s... %s" % (i, urllib2.unquote(search), url)
+
+                # Get the source code for page
+                html = browser.page_source.encode("utf-8")
+                soup = BeautifulSoup(html, "html.parser")
+
+                # Scrape tweets on page
+                tweetids = soup.find_all('a', class_='last')
+
+                for tweet in tweetids:
+                    tweet = tweet.attrs['href'].split('/')
+                    tweetid = tweet[3]
+                    username = tweet[1]
+                    if self.in_db(tweetid):
+                        if verbose:
+                            print "Tweet %s has already been collected" % tweetid
+                        continue
+                    try:
+                        response = self.scrapeid(username, tweetid)
+                        tweet = ff.tweet.Scrape(response)
+                        if not tweet.retweeted:
+                            self.add_to_db(tweet, team, verbose=verbose)
+                    except:
+                        if verbose == True:
+                            print "Could not collect tweet %s." % (tweetid)
+                            print "Error:", sys.exc_info()
+                        pass
+
+                # Get the next page button and exit if does not exit
+                loadmore = browser.find_elements_by_xpath(
+                    "//a[contains(text(), ' Load older Tweets ')]")
+                if len(loadmore) == 0:
+                    print "End of results."
+                    break
+
+                # Click the button
+                button = loadmore[0]
+                time.sleep(np.random.lognormal(1, .5, 1)[0])
+                button.click()
+                i += 1
+        except:
+            pass
+        finally:
+            browser.close()
+            browser.quit()
 
     def search_recent(self, search, start, end, verbose=False):
         ''' Pages through search API for tweets under 7 days old
