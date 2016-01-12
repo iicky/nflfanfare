@@ -7,7 +7,7 @@ if not path in sys.path:
     sys.path.insert(1, path)
 del path
 
-from nflfanfare import schedule
+import nflfanfare as ff
 
 games = ff.sched.all_games()
 
