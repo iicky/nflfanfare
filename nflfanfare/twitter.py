@@ -389,29 +389,6 @@ class Twitter:
                 print "Quota reached for search/tweets. Waiting %s seconds." % delta.total_seconds()
                 time.sleep(delta.total_seconds())
 
-    def search_game_tweets(self, gameid):
-        ''' Finds tweets for a gameid
-        '''
-        info = ff.sched.game_info(gameid)
-        pre, post = ff.sched.pre_post_times(info['starttime'])
-        now = datetime.utcnow()
-
-        startage = now - pre
-        endage = now - post
-        oneweek = now - timedelta(days=7)
-        upcoming = now + timedelta(hours=1)
-
-        if pre < oneweek:   # Historic game (> 1 week)
-            print "historic game"
-        elif pre > oneweek and post < now:  # Recent game (< 1 week)
-            print "recent game"
-        elif pre < now and post > now:  # Live game (on now)
-            print "live game"
-        elif pre > now and pre < upcoming:  # Upcoming game (within 1 hour)
-            print "upcoming game"
-        elif pre > datetime.now():  # Pending game (> 1 hour away)
-            print "pending game"
-
     def tweet_gameid(self, tweetid):
         ''' Returns the game id for a tweet in database
         '''
