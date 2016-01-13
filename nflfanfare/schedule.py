@@ -325,7 +325,7 @@ class Schedule:
             return ses.query(result.exists()).scalar()
 
     def is_complete(self, gameid):
-        ''' Returns true if gameid is in database
+        ''' Returns true if gameid is complete
         '''
         with ff.db.con() as ses:
             result = ses.query(ff.db.schedule).filter_by(gameid=gameid).one()
