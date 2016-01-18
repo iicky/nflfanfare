@@ -14,9 +14,9 @@ games = ff.sched.all_games()
 for g in games.gameid:
 	status = ff.sched.game_status(g)
 	if status == "historic":
-		if ff.sched.tweet_count(g) < 10000:
+		if ff.sched.game_tweet_counts(g)['total'] < 1000:
 			try:
-				ff.col.collect_historic(g, verbose=True)
+				ff.col.collect_historic(g, verbose=True, method='scrape')
 			except:
 				pass
 		
