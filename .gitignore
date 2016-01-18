@@ -42,3 +42,7 @@ timeshift.js
 .ipynb_checkpoints/Scraping-checkpoint.ipynb
 
 Scraping.ipynb
+
+mysql_to_mongo.py
+
+team_test.py
