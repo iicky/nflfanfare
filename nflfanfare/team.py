@@ -1,5 +1,6 @@
 import pandas as pd
-from sqlalchemy.sql.expression import func
+from pymongo import MongoClient
+import random
 
 import nflfanfare as ff
 
@@ -14,51 +15,60 @@ class Team:
     def team_ids(self):
         ''' Returns NFL Team IDs as a list
         '''
-        with ff.db.con() as ses:
-            result = ses.query(ff.db.teams).all()
-            return [r.teamid for r in result]
+        return ff.db.teams.\
+            find({}, {'teamid': 1, '_id': 0}).\
+            distinct('teamid')
 
     def team_hashtags(self, teamid):
         ''' Returns all hashtags for NFL team
         '''
-        with ff.db.con() as ses:
-            result = ses.query(ff.db.teamhashtags).filter_by(
-                teamid=teamid).all()
-            return [r.hashtag for r in result]
+        try:
+            return ff.db.teams.find_one({'teamid': teamid})['hashtags']
+        except:
+            return None
 
     def rand_hashtag(self, teamid):
         ''' Returns random hashtag for NFL team
         '''
-        with ff.db.con() as ses:
-            result = ses.query(ff.db.teamhashtags).filter_by(
-                teamid=teamid).order_by(func.rand()).first()
-            return result.hashtag
+        try:
+            return random.choice(
+                ff.db.teams.find_one({'teamid': teamid})['hashtags'])
+        except:
+            return None
 
     def teamid_from_name(self, teamname):
         ''' Returns the team id from team full name
         '''
-        with ff.db.con() as ses:
-            result = ses.query(ff.db.teams).filter(func.concat(
-                ff.db.teams.teamcity, ' ', ff.db.teams.teamname) == teamname).one()
-            return result.teamid
+        try:
+            result = ff.db.teams.aggregate([
+                {'$project': {
+                    'teamid': '$teamid',
+                    'fullname': {'$concat': ['$teamcity', ' ', '$teamname']}
+                }
+                },
+                {'$match': {'fullname': teamname}}
+            ])
+            return list(result)[0]['teamid']
+        except:
+            return None
 
     def teamid_from_hashtag(self, hashtag):
         ''' Returns the teamid for a hashtag
         '''
-        with ff.db.con() as ses:
-            result = ses.query(ff.db.teamhashtags).filter_by(
-                hashtag=hashtag).one()
-            return result.teamid
+        try:
+            return ff.db.teams.find_one({'hashtags': {"$in": [hashtag]}})['teamid']
+        except:
+            return None
 
     def pfrid_from_teamid(self, teamid):
         ''' Returns the PFR ID from team id
         '''
-        with ff.db.con() as ses:
-            result = ses.query(ff.db.teams).filter_by(teamid=teamid).one()
-            return result.pfrid
+        try:
+            return ff.db.teams.find_one({'teamid': teamid})['pfrid']
+        except:
+            return None
 
     def teams(self):
         ''' Returns teams as dataframe
         '''
-        df = pd.read_sql_table('teams', ff.db.engine)
-        return df
+        return pd.DataFrame(list(ff.db.teams.find({}, {'_id': 0})))

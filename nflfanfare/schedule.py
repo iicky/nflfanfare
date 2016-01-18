@@ -3,11 +3,11 @@ from datetime import datetime, timedelta
 import nflgame
 import os
 import pandas as pd
+from pymongo import MongoClient
 import pytz
 import re
 from selenium import webdriver
 from StringIO import StringIO
-import sqlalchemy as sql
 import sys
 import urllib2
 
@@ -105,7 +105,6 @@ class Schedule:
                         and not line[0] == ','
                         and not 'Week' in line):
                     csv += '%s,%s\n' % (year, line)
-
             return csv
         except:
             print "Could not scrape completed games from PFR."
@@ -186,19 +185,22 @@ class Schedule:
         if hometeam == 'JAX':
             hometeam = 'JAC'
 
-        if week.isdigit():
-            game = nflgame.games(year=int(year),
-                                 week=int(week),
-                                 home=hometeam,
-                                 away=awayteam)[0]
-        else:
-            game = nflgame.games(year=int(year),
-                                 kind='POST',
-                                 home=hometeam,
-                                 away=awayteam)[0]
-        return (game.gamekey,
-                game.eid,
-                game.schedule['season_type'])
+        try:
+            if week.isdigit():
+                game = nflgame.games(year=int(year),
+                                     week=int(week),
+                                     home=hometeam,
+                                     away=awayteam)[0]
+            else:
+                game = nflgame.games(year=int(year),
+                                     kind='POST',
+                                     home=hometeam,
+                                     away=awayteam)[0]
+            return (game.gamekey,
+                    game.eid,
+                    game.schedule['season_type'])
+        except:
+            return (None, None, None)
 
     def completed_games_df(self, year):
         ''' Returns completed games csv as data frame
@@ -235,6 +237,7 @@ class Schedule:
                                                       row['awayteam'],
                                                       row['year'],
                                                       row['week']), axis=1)
+
         df['gameid'] = info.str.get(0)
         df['eid'] = info.str.get(1)
         df['seasontype'] = info.str.get(2)
@@ -320,69 +323,60 @@ class Schedule:
     def in_db(self, gameid):
         ''' Returns true if gameid is in database
         '''
-        with ff.db.con() as ses:
-            result = ses.query(ff.db.schedule).filter_by(gameid=gameid)
-            return ses.query(result.exists()).scalar()
+        if ff.db.games.find({'gameid': gameid}).count() > 0:
+            return True
+        else:
+            return False
 
     def is_complete(self, gameid):
         ''' Returns true if gameid is complete
         '''
-        with ff.db.con() as ses:
-            result = ses.query(ff.db.schedule).filter_by(gameid=gameid).one()
-            if not result.endtime == None:
-                return True
-            return False
+        result = ff.db.games.find_one({'gameid': gameid})
+        if not result == None:
+            if result.has_key('endtime'):
+                if not result['endtime'] == None:
+                    return True
+        return False
 
     def add_game(self, row):
         ''' Adds game to database
         '''
-        query = ff.db.schedule(gameid=row['gameid'],
-                               eid=row['eid'],
-                               week=row['week'],
-                               seasontype=row['seasontype'],
-                               hometeam=row['hometeam'],
-                               awayteam=row['awayteam'],
-                               starttime=row[
-            'starttime'] if 'starttime' in row.index else None
-        )
-        with ff.db.con() as ses:
-            try:
-                ses.add(query)
-                ses.commit()
-            except:
-                print "Could not add %s to database" % row['gameid']
-                print "Error:", sys.exc_info()
-                ses.rollback()
+        game = {
+            'gameid': row['gameid'],
+            'eid': row['eid'],
+            'week': row['week'],
+            'seasontype': row['seasontype'],
+            'hometeam': row['hometeam'],
+            'awayteam': row['awayteam'],
+            'starttime': row['starttime'] if 'starttime' in row.index else None
+        }
+        try:
+            result = ff.db.games.insert_one(game)
+        except:
+            print "Could not add %s to database" % row['gameid']
 
     def add_pfr_info(self, gameid, info):
         ''' Adds Pro-Football Reference info to database
         '''
-        with ff.db.con() as ses:
-            table = ses.query(ff.db.schedule).get(gameid)
-
-            table.starttime = info['starttime'] if info.has_key(
-                'starttime') else None
-            table.endtime = info['endtime'] if info.has_key(
-                'endtime') else None
-            table.stadium = info['stadium'] if info.has_key(
-                'stadium') else None
-            table.weather = info['weather'] if info.has_key(
-                'weather') else None
-            table.wontoss = info['wontoss'] if info.has_key(
-                'wontoss') else None
-            table.attendance = info['attendance'] if info.has_key(
-                'attendance') else None
-            table.vegasline = info['vegasline'] if info.has_key(
-                'vegasline') else None
-            table.overunder = info['overunder'] if info.has_key(
-                'overunder') else None
-
-            try:
-                ses.commit()
-            except:
-                print "Could not update %s PFR info." % gameid
-                print "Error:", sys.exc_info()
-                ses.rollback()
+        try:
+            result = ff.db.games.update_one(
+                {"gameid": gameid},
+                {
+                    "$set": {
+                        'starttime': info['starttime'] if info.has_key('starttime') else None,
+                        'endtime': info['endtime'] if info.has_key('endtime') else None,
+                        'stadium': info['stadium'] if info.has_key('stadium') else None,
+                        'weather': info['weather'] if info.has_key('weather') else None,
+                        'wontoss': info['wontoss'] if info.has_key('wontoss') else None,
+                        'attendance': info['attendance'] if info.has_key('attendance') else None,
+                        'vegasline': info['vegasline'] if info.has_key('vegasline') else None,
+                        'overunder': info['overunder'] if info.has_key('overunder') else None
+                    }
+                }
+            )
+        except:
+            print "Could not update %s PFR info." % gameid
+            print "Error:", sys.exc_info()
 
     def update_db_schedule(self):
         ''' Updates schedule table of database
@@ -390,17 +384,16 @@ class Schedule:
 
         cdf = self.completed_games_df('2015')
         pdf = self.pending_games_df('2015')
-
         if not cdf.empty:
             for i, row in cdf.iterrows():
-                if not self.in_db(row['gameid']):
+                if not self.in_db(row['gameid']) and row['gameid'] != None:
                     self.add_game(row)
 
                 # Update game with PFR info
                 if not self.is_complete(row['gameid']):
                     info = self.pfr_game_info(row['boxscore'])
-                    if info.has_key('endtime'):
-                        self.add_pfr_info(row['gameid'], info)
+                    self.add_pfr_info(row['gameid'], info)
+
         if not pdf.empty:
             for i, row in pdf.iterrows():
                 if not self.in_db(row['gameid']):
@@ -409,28 +402,26 @@ class Schedule:
     def game_info(self, gameid):
         ''' Returns info for game id
         '''
-        with ff.db.con() as ses:
-            result = ses.query(ff.db.schedule).filter_by(gameid=gameid).one()
-            return result.__dict__
+        result = ff.db.games.find_one({'gameid': gameid})
+        return result
 
     def all_games(self):
         ''' Returns dataframe of all games
         '''
-        df = pd.read_sql_table('schedule', ff.db.engine)
-        return df
+        return pd.DataFrame(list(ff.db.games.find({}, {'_id': 0})))
 
     def completed_games(self):
         ''' Returns dataframe of completed games
         '''
-        df = pd.read_sql_table('schedule', ff.db.engine)
-        df = df[pd.notnull(df.endtime)]
+        df = pd.DataFrame(list(ff.db.games.find(
+            {'endtime': {'$ne': 'null'}}, {'_id': 0})))
         return df if not df.empty else None
 
     def pending_games(self):
-        ''' Returns dataframe of pending games
+        ''' Returns dataframe of completed games
         '''
-        df = pd.read_sql_table('schedule', ff.db.engine)
-        df = df[pd.isnull(df.endtime)]
+        df = pd.DataFrame(
+            list(ff.db.games.find({'endtime': None}, {'_id': 0})))
         return df if not df.empty else None
 
     def pre_post_times(self, starttime):
@@ -440,99 +431,45 @@ class Schedule:
         postgame = starttime + timedelta(hours=4)
         return (pregame, postgame)
 
-    def gameid_from_team_time(self, teamid, postedtime):
+    def gameid_from_team_and_time(self, teamid, postedtime):
         ''' Returns gameid from a teamid and posted time
         '''
-        with ff.db.con() as ses:
-            result = ses.query(ff.db.schedule).\
-                filter(sql.or_(
-                    teamid == ff.db.schedule.hometeam,
-                    teamid == ff.db.schedule.awayteam)).\
-                filter(sql.and_(
-                    sql.text(':postedtime > schedule.starttime - INTERVAL 1 HOUR').
-                    bindparams(postedtime=postedtime),
-                    sql.text(':postedtime < schedule.starttime + INTERVAL 4 HOUR').
-                    bindparams(postedtime=postedtime))).first()
+        onehour = 60 * 60 * 1000
+        fourhours = 4 * onehour
+        result = ff.db.games.aggregate([
+                { '$project': {
+                    'gameid': '$gameid',
+                    'hometeam': '$hometeam',
+                    'awayteam': '$awayteam',
+                    'starttime': '$starttime',
+                    'start': { '$subtract': ['$starttime', onehour] },
+                    'end': { '$add': ['$starttime', fourhours] }
+                    }
+                },
+                {'$match': { 
+                    '$and': [ 
+                        { '$or': [ { 'hometeam': teamid }, 
+                                   { 'awayteam': teamid } 
+                                 ] },
+                        { 'start': { '$lt': postedtime } },
+                        { 'end': { '$gte': postedtime } }
+                    ]
+                    }
+                }
 
-            if hasattr(result, 'gameid'):
-                return result.gameid
-            return None
-
-    def tweet_count(self, gameid):
-        ''' Returns the tweet count for a game
-        '''
-        info = self.game_info(gameid)
-        with ff.db.con() as ses:
-            result = ses.query(ff.db.tweets).\
-                filter(ff.db.tweets.gameid == gameid).\
-                filter(ff.db.tweets.sent_compound != 0).count()
-            return result
+            ])
+        if not result == None:
+            for r in result:
+                if 'gameid' in r:
+                    return r['gameid']
+        return None
 
     def game_teams(self, gameid):
         ''' Returns a dictionary of teams for a game
         '''
-        with ff.db.con() as ses:
-            result = ses.query(ff.db.schedule).\
-                filter_by(gameid=gameid).one()
-            return {'hometeam': result.hometeam, 'awayteam': result.awayteam}
-
-    def game_tweet_counts(self, gameid):
-        ''' Returns a dictionary of tweet counts for a game
-        '''
-        teams = self.game_teams(gameid)
-        counts = {}
-        with ff.db.con() as ses:
-            for t in teams:
-                result = ses.query(ff.db.tweets).\
-                    filter_by(gameid=gameid).\
-                    filter(ff.db.tweets.sent_compound != 0).\
-                    filter_by(teamid=teams[t]).count()
-                counts[t] = result
-        counts['total'] = counts['hometeam'] + counts['awayteam']
-        return counts
-
-    def update_game_tweet_counts(self, gameid):
-        ''' Updates tweet counts in database for a gameid
-        '''
-        with ff.db.con() as ses:
-            counts = self.game_tweet_counts(gameid)
-            
-            table = ses.query(ff.db.schedule).get(gameid)
-            table.hometweets = counts['hometeam']
-            table.awaytweets = counts['awayteam']
-            table.totaltweets = counts['total']
-
-            try:
-                ses.commit()
-            except:
-                print "Could not update %s tweet counts." % gameid
-                print "Error:", sys.exc_info()
-                ses.rollback()
-
-    def update_db_tweet_counts(self):
-        ''' Updates tweet counts for games in the database
-        '''
-        with ff.db.con() as ses:
-            games = ses.query(ff.db.schedule).all()
-            for g in games:
-                self.update_game_tweet_counts(g.gameid)
-
-    def all_tweet_counts(self):
-        ''' Returns game information with tweet counts for all games
-        '''
-        query = """SELECT *,
-                   CASE
-                   WHEN s.gameid NOT IN (SELECT gameid FROM tweets
-                                         WHERE gameid IS NOT NULL)
-                   THEN 0
-                   ELSE (SELECT COUNT(tweetid) FROM tweets
-                         WHERE gameid=s.gameid
-                         AND sent_compound != 0)
-                   END as tweetcount
-                   FROM schedule s
-                """
-        result = pd.read_sql_query(query, ff.db.engine)
-        return result
+        result = ff.db.games.find_one({'gameid': gameid})
+        return {'hometeam': result['hometeam'],
+                'awayteam': result['awayteam']}
 
     def game_status(self, gameid):
         ''' Returns game status
@@ -553,3 +490,46 @@ class Schedule:
             return "upcoming"
         elif pre > datetime.now():  # Pending game (> 1 hour away)
             return "pending"
+
+    def game_tweet_counts(self, gameid):
+        ''' Returns a dictionary of tweet counts for a game
+        '''
+        counts = {}
+        teams = self.game_teams(gameid)
+        for t in teams:
+            result = ff.db.tweets.find({'gameid': gameid,
+                                        'teamid': teams[t],
+                                        'sentiment.sent_compound': {'$ne': 0}
+                                        }).count()
+            counts[t] = result
+
+        counts['total'] = counts['hometeam'] + counts['awayteam']
+        return counts
+
+    def update_game_tweet_counts(self, gameid):
+        ''' Updates tweet counts in database for a gameid
+        '''
+        counts = self.game_tweet_counts(gameid)
+
+        try:
+            result = ff.db.games.update_one(
+                    {"gameid": gameid},
+                    {
+                        "$set": {
+                            'tweetcounts.hometeam': counts['hometeam'],
+                            'tweetcounts.awayteam': counts['awayteam'],
+                            'tweetcounts.total': counts['total'],
+                        }
+                    }
+            )            
+        except:
+            print "Could not update %s tweet counts." % gameid
+
+    def update_db_tweet_counts(self):
+        ''' Updates tweet counts for games in the database
+        '''
+        games = list(ff.db.games.find({},{'gameid':1, '_id':0}))
+        for g in games:
+            print g['gameid']
+            self.update_game_tweet_counts(g['gameid'])            
+

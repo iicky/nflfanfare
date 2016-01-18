@@ -80,7 +80,8 @@ class Twitter:
         ''' Returns JSON object for scraped tweet by id
         '''
         try:
-            url = 'https://mobile.twitter.com/%s/status/%s' % (username, tweetid)
+            url = 'https://mobile.twitter.com/%s/status/%s' % (
+                username, tweetid)
 
             if platform.system() == 'Linux':
                 display = Display(visible=0, size=(800, 600))
@@ -114,52 +115,52 @@ class Twitter:
     def in_db(self, tweetid):
         ''' Returns true if tweet is in database
         '''
-        with ff.db.con() as ses:
-            result = ses.query(ff.db.tweets).filter_by(tweetid=tweetid)
-            return ses.query(result.exists()).scalar()
+        if ff.db.tweets.find({'tweetid': tweetid}).count() > 0:
+            return True
+        else:
+            return False
 
     def add_to_db(self, tweet, teamid, verbose=False):
         ''' Adds a tweet object to the database
         '''
-        query = ff.db.tweets(tweetid=tweet.tweetid,
-                             teamid=teamid,
-                             userid=tweet.userid,
-                             username=tweet.username,
-                             realname=tweet.realname,
-                             userlocation=tweet.userlocation,
-                             usertimezone=tweet.usertimezone,
-                             userprofileimg=tweet.userprofileimg,
-                             tweettext=tweet.tweettext,
-                             language=tweet.language,
-                             hashtags=tweet.hashtags,
-                             usermentions=tweet.usermentions,
-                             postedtime=tweet.postedtime,
-                             collectedtime=tweet.collectedtime,
-                             sent_pos=tweet.sent_pos,
-                             sent_neg=tweet.sent_neg,
-                             sent_neu=tweet.sent_neu,
-                             sent_compound=tweet.sent_compound,
-                             gameid=ff.sched.gameid_from_team_time(
-                                 teamid, tweet.postedtime),
-                             source=tweet.source
-                             )
-        with ff.db.con() as ses:
-            try:
-                if not self.in_db(tweet.tweetid):
-                    if verbose == True:
-                        print "Adding %s: %s to database for %s." % (tweet.username, tweet.tweettext, teamid)
+        outtweet = {'tweetid': tweet.tweetid,
+                    'teamid': teamid,
+                    'gameid': ff.sched.gameid_from_team_and_time(
+                        teamid, tweet.postedtime),
+                    'language': tweet.language,
+                    'tweettext': tweet.tweettext,
+                    'hashtags': tweet.hashtags,
+                    'usermentions': tweet.usermentions,
+                    'postedtime': tweet.postedtime,
+                    'collectedtime': tweet.collectedtime,
+                    'source': tweet.source,
+                    'user': {'userid': tweet.userid,
+                             'username': tweet.username,
+                             'realname': tweet.realname,
+                             'userlocation': tweet.userlocation,
+                             'usertimezone': tweet.usertimezone,
+                             'userprofileimg': tweet.userprofileimg
+                             },
+                    'sentiment': {'sent_pos': tweet.sent_pos,
+                                  'sent_neg': tweet.sent_neg,
+                                  'sent_neu': tweet.sent_neu,
+                                  'sent_compound': tweet.sent_compound
+                                  }
+                    }
 
-                    ses.add(query)
-                    ses.commit()
-
-                else:
-                    if verbose == True:
-                        print "Tweet %s is already in the database." % tweet.tweetid
-            except:
+        try:
+            if not self.in_db(tweet.tweetid):
                 if verbose == True:
-                    print "Could not add %s to database." % (tweet.tweetid)
-                    print "Error:", sys.exc_info()
-                    ses.rollback()
+                    print "%s/%s - Adding %s: %s to database." % (outtweet['gameid'], teamid, tweet.username, tweet.tweettext)
+                result = ff.db.tweets.insert_one(outtweet)
+
+            else:
+                if verbose == True:
+                    print "Tweet %s is already in the database." % tweet.tweetid
+        except:
+            if verbose == True:
+                print "Could not add %s to database." % (tweet.tweetid)
+                print "Error:", sys.exc_info()
 
     def search_historic(self, search, start, end, live=True, verbose=False):
         ''' Finds historic tweets and adds them to the database
@@ -168,7 +169,7 @@ class Twitter:
         team = ff.team.teamid_from_hashtag(search)
 
         # Clean up inputs
-        search = urllib2.quote('#' + search, safe='')
+        search = urllib2.quote(search, safe='')
 
         if type(start) == datetime:
             # Convert to UTC timezone
@@ -260,7 +261,7 @@ class Twitter:
         team = ff.team.teamid_from_hashtag(search)
 
         # Clean up inputs
-        search = urllib2.quote('#' + search, safe='')
+        search = urllib2.quote(search, safe='')
 
         if type(start) == datetime:
             # Convert to UTC timezone
@@ -367,7 +368,6 @@ class Twitter:
 
         # Get NFL teamid from hashtag
         team = ff.team.teamid_from_hashtag(search)
-        search = '#' + search
 
         result = TwitterRestPager(
             self.twi, 'search/tweets', {'q': search, 'lang': 'en', 'count': 100, 'until': str(endstamp)})
@@ -392,16 +392,19 @@ class Twitter:
     def tweet_gameid(self, tweetid):
         ''' Returns the game id for a tweet in database
         '''
-        with ff.db.con() as ses:
-            result = ses.query(ff.db.tweets, ff.db.schedule).\
-                join(ff.db.schedule, sql.or_(
-                    ff.db.tweets.teamid == ff.db.schedule.hometeam,
-                    ff.db.tweets.teamid == ff.db.schedule.awayteam)).\
-                filter(ff.db.tweets.tweetid == tweetid).\
-                filter(ff.db.tweets.postedtime.between(
-                    sql.text('schedule.starttime - INTERVAL 1 HOUR'),
-                    sql.text('schedule.starttime + INTERVAL 4 HOUR'))).first()
-
-            if hasattr(result, 'Schedule'):
-                return result.Schedule.gameid
-            return None
+        tweet = ff.db.tweets.find_one({'tweetid': tweetid})
+        if not tweet == None:
+            result = ff.db.games.find_one({
+                '$and': [
+                    {'$or': [{'hometeam': tweet['teamid']},
+                             {'awayteam': tweet['teamid']}
+                             ]},
+                    {'starttime': {'$gte': tweet['postedtime'] - timedelta(hours=1),
+                                   '$lt': tweet['postedtime'] + timedelta(hours=4)
+                                   }
+                     }
+                ]
+            })
+            if not result == None:
+                return result['gameid']
+        return None

@@ -16,9 +16,4 @@ stats = stats.Statistics()
 team = team.Team()
 twitter = twitter.Twitter()
 
-# Database tables
-db.schedule = database.Schedule
-db.teamhashtags = database.TeamHashtags
-db.teams = database.Teams
-db.tweets = database.Tweets
 
