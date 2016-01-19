@@ -3,6 +3,7 @@
 import nflfanfare.collector as col
 import nflfanfare.database as db
 import nflfanfare.schedule as sched
+import nflfanfare.secrets as sec
 import nflfanfare.statistics as stats
 import nflfanfare.team as team
 import nflfanfare.tweet as tweet

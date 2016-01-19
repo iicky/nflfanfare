@@ -7,7 +7,6 @@ import platform
 from pyvirtualdisplay import Display
 import pytz
 import re
-import secrets as sec
 from selenium import webdriver
 import sys
 import time
@@ -26,7 +25,7 @@ class Twitter:
         ''' Defines tweet properties from API
         '''
         self.twi = TwitterAPI(
-            sec.twitter_ckey, sec.twitter_csec, auth_type='oAuth2')
+            ff.sec.twitter_ckey, ff.sec.twitter_csec, auth_type='oAuth2')
 
     def quota(self, request):
         ''' Returns quota information for API request
