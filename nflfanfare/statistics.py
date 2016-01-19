@@ -30,15 +30,15 @@ class Statistics:
         df = df[["gameid", "week", "seasontype", "hometeam",
                  "awayteam", "starttime", "hometweets", "awaytweets", "totaltweets"]]
 
-        #df['status'] = df.gameid.apply(ff.sched.game_status)
+        df['status'] = df.gameid.apply(ff.sched.game_status)
 
         # Convert to UTC then local timezone
-        #local = tzlocal.get_localzone()
-        # df['starttime'] = df.starttime.apply(
-        #    lambda d: pytz.timezone('UTC').localize(d)).astype(datetime)
-       # df['starttime'] = df.starttime.apply(lambda d: datetime.strftime(
-       #     d.astimezone(local), '%b %d, %Y %I:%M%p %Z'))
-       # df['starttime'] = df.starttime.astype(str)
+        local = tzlocal.get_localzone()
+        df['starttime'] = df.starttime.apply(
+            lambda d: pytz.timezone('UTC').localize(d)).astype(datetime)
+        df['starttime'] = df.starttime.apply(lambda d: datetime.strftime(
+            d.astimezone(local), '%b %d, %Y %I:%M%p %Z'))
+        df['starttime'] = df.starttime.astype(str)
 
         return df
 
