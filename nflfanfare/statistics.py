@@ -1,4 +1,8 @@
+from bson import json_util
 from datetime import datetime
+import json
+import pandas as pd
+import pymongo
 import pytz
 import tzlocal
 
@@ -15,19 +19,26 @@ class Statistics:
     def game_tweet_counts(self):
         ''' Returns pandas dataframe of game info and tweet counts
         '''
-        df = ff.sched.all_tweet_counts()
-        df = df[["gameid", "week", "seasontype", "hometeam",
-                 "awayteam", "starttime", "tweetcount"]]
 
-        df['status'] = df.gameid.apply(ff.sched.game_status)
+        result = ff.db.games.find().sort([('gameid', pymongo.ASCENDING)])
+        df = pd.DataFrame(list(result))
+
+        df['hometweets'] = df.tweetcounts.map(lambda t: t['hometeam'])
+        df['awaytweets'] = df.tweetcounts.map(lambda t: t['awayteam'])
+        df['totaltweets'] = df.tweetcounts.map(lambda t: t['total'])
+
+        df = df[["gameid", "week", "seasontype", "hometeam",
+                 "awayteam", "starttime", "hometweets", "awaytweets", "totaltweets"]]
+
+        #df['status'] = df.gameid.apply(ff.sched.game_status)
 
         # Convert to UTC then local timezone
-        local = tzlocal.get_localzone()
-        df['starttime'] = df.starttime.apply(
-            lambda d: pytz.timezone('UTC').localize(d)).astype(datetime)
-        df['starttime'] = df.starttime.apply(lambda d: datetime.strftime(
-            d.astimezone(local), '%b %d, %Y %I:%M%p %Z'))
-        df['starttime'] = df.starttime.astype(str)
+        #local = tzlocal.get_localzone()
+        # df['starttime'] = df.starttime.apply(
+        #    lambda d: pytz.timezone('UTC').localize(d)).astype(datetime)
+       # df['starttime'] = df.starttime.apply(lambda d: datetime.strftime(
+       #     d.astimezone(local), '%b %d, %Y %I:%M%p %Z'))
+       # df['starttime'] = df.starttime.astype(str)
 
         return df
 

@@ -1,8 +1,8 @@
+from bson import json_util
 from flask import Flask, jsonify, render_template, Markup
 from app import app
 import json
 import pandas as pd
-import sqlalchemy as sql
 
 from nflfanfare import stats
 
@@ -17,6 +17,7 @@ def scroll():
 @app.route('/tweetcount')
 def tweetcount():
     df = stats.game_tweet_counts()
+    #return json.dumps(data, default=json_util.default)
     return df.to_json(orient='records')
 
 @app.route('/teaminfo')
