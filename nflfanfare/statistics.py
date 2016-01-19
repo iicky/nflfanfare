@@ -37,7 +37,7 @@ class Statistics:
         df['starttime'] = df.starttime.apply(
             lambda d: pytz.timezone('UTC').localize(d)).astype(datetime)
         df['starttime'] = df.starttime.apply(lambda d: datetime.strftime(
-            d.astimezone(local), '%b %d, %Y %I:%M%p %Z'))
+            d.astimezone(local), '%Y/%m/%d %I:%M%p %Z'))
         df['starttime'] = df.starttime.astype(str)
 
         return df
