@@ -14,7 +14,7 @@ games = ff.sched.all_games()
 for g in games.gameid:
 	status = ff.sched.game_status(g)
 	if status == "recent":
-		if ff.sched.tweet_count(g) < 5000:
+		if ff.sched.game_tweet_counts(g)['total'] < 10000:
 			try:
 				ff.col.collect_recent(g, verbose=True)
 			except:
