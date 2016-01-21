@@ -530,6 +530,5 @@ class Schedule:
         '''
         games = list(ff.db.games.find({},{'gameid':1, '_id':0}))
         for g in games:
-            print g['gameid']
             self.update_game_tweet_counts(g['gameid'])            
 
