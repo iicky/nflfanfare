@@ -161,15 +161,9 @@ class Twitter:
                 print "Could not add %s to database." % (tweet.tweetid)
                 print "Error:", sys.exc_info()
 
-    def search_historic(self, search, start, end, live=True, verbose=False):
-        ''' Finds historic tweets and adds them to the database
+    def start_end_times(self, start, end):
+        ''' Converts start and end times for a game 
         '''
-        # Get NFL teamid from hashtag
-        team = ff.team.teamid_from_hashtag(search)
-
-        # Clean up inputs
-        search = urllib2.quote(search, safe='')
-
         if type(start) == datetime:
             # Convert to UTC timezone
             start = pytz.timezone('UTC').localize(start)
@@ -187,6 +181,11 @@ class Twitter:
             start = int(time.mktime(time.strptime(start, "%Y-%m-%d %H:%M")))
             end = int(time.mktime(time.strptime(end, "%Y-%m-%d %H:%M")))
 
+        return start, end
+
+    def mobile_url(self, search, start, end, live=True):
+        ''' Returns mobile Twitter search URL
+        '''
         mod = '' if not live else 'f=tweets&'
 
         # Generate url queries
@@ -195,6 +194,21 @@ class Twitter:
         url += '&q="%s"%%20lang%%3Aen%%20' % search
         url += 'since%%3A%s%%20' % start
         url += 'until%%3A%s&src=typd' % end
+
+        return url
+
+    def search_historic(self, search, start, end, live=True, verbose=False):
+        ''' Finds historic tweets and adds them to the database
+        '''
+        # Get NFL teamid from hashtag
+        team = ff.team.teamid_from_hashtag(search)
+
+        # Clean up inputs
+        search = urllib2.quote(search, safe='')
+
+        start, end = self.start_end_times(start, end)
+
+        url = self.mobile_url(search, start, end, live)
 
         try:
             # Open url in browser
@@ -262,31 +276,9 @@ class Twitter:
         # Clean up inputs
         search = urllib2.quote(search, safe='')
 
-        if type(start) == datetime:
-            # Convert to UTC timezone
-            start = pytz.timezone('UTC').localize(start)
-            end = pytz.timezone('UTC').localize(end)
+        start, end = self.start_end_times(start, end)
 
-            # Convert to local timezone
-            local = tzlocal.get_localzone()
-            start = start.astimezone(local)
-            end = end.astimezone(local)
-
-            # Make timestamp
-            start = int(time.mktime(start.timetuple()))
-            end = int(time.mktime(end.timetuple()))
-        else:
-            start = int(time.mktime(time.strptime(start, "%Y-%m-%d %H:%M")))
-            end = int(time.mktime(time.strptime(end, "%Y-%m-%d %H:%M")))
-
-        mod = '' if not live else 'f=tweets&'
-
-        # Generate url queries
-        url = 'http://mobile.twitter.com/search'
-        url += '?%svertical=default' % mod
-        url += '&q="%s"%%20lang%%3Aen%%20' % search
-        url += 'since%%3A%s%%20' % start
-        url += 'until%%3A%s&src=typd' % end
+        url = self.mobile_url(search, start, end, live)
 
         try:
             # Open url in browser
@@ -345,6 +337,98 @@ class Twitter:
         finally:
             browser.close()
             browser.quit()
+
+    def bulk_cell_to_dict(self, cell):
+        ''' Convert bulk scrape tweet cell to dictionary
+        '''
+        try:
+            tweetid = cell.find('div', {'class': 'Tweet'})
+            if not tweetid == None:
+                tweettext = cell.find('div', {'class': 'TweetText'}).text
+                entities = cell.find_all('span', {'class': 'TweetEntity'})
+                info = {'tweetid': tweetid.attrs['data-tweet-id'],
+                        'username': cell.find('span', {'class': 'UserNames-screenName'}).text.lstrip('@'),
+                        'realname': cell.find('b', {'class': 'UserNames-displayName'}).text,
+                        'userprofileimg': cell.find('img', {'class': 'UserAvatar'}).attrs['src'],
+                        'tweettext': tweettext,
+                        'language': cell.find('div', {'class': 'TweetText'}).attrs['lang'],
+                        'hashtags': ','.join([h.text.lstrip('#') for h in entities if '#' in h.text]),
+                        'usermentions': ','.join([h.text.lstrip('@') for h in entities if '@' in h.text]),
+                        'retweeted': True if 'RT ' in tweettext else False,
+                        'postedtime': datetime.strptime(cell.find('time').
+                                                        attrs['datetime'][:19], '%Y-%m-%dT%H:%M:%S')
+                        }
+                return info
+            return None
+        except:
+            return None
+
+    def bulk_source(self, url):
+        ''' Returns source from url as soup for bulk scraping
+        '''
+        try:
+            browser = webdriver.Firefox()
+            browser.get(url)
+
+            # Infinite scrolling handling
+            height = browser.execute_script(
+                'return document.body.scrollHeight')
+            count = 0
+            while True:
+                time.sleep(1)
+                browser.execute_script(
+                    "window.scrollTo(0, document.body.scrollHeight);")
+                newheight = browser.execute_script(
+                    'return document.body.scrollHeight')
+                if newheight - height == 0:
+                    count += 1
+                    if count == 3:
+                        break
+                else:
+                    height = newheight
+                    count = 0
+
+            html = browser.page_source.encode("utf-8")
+            soup = BeautifulSoup(html, "html.parser")
+            return soup
+        except:
+            print "Could not scrape bulk source for URL"
+        finally:
+            browser.close()
+            browser.quit()
+
+    def bulk_historic(self, search, start, end, live=True, verbose=False):
+        ''' Scrapes historic tweets in bulk and adds them to the database
+        '''
+        # Get NFL teamid from hashtag
+        team = ff.team.teamid_from_hashtag(search)
+
+        # Clean up inputs
+        search = urllib2.quote(search, safe='')
+
+        start, end = self.start_end_times(start, end)
+
+        url = self.mobile_url(search, start, end, live)
+        print "Bulk scraping for %s... %s" % (urllib2.unquote(search), url)
+
+        soup = self.bulk_source(url)
+        cells = soup.find_all('div', {'role': 'gridcell'})
+        for cell in cells:
+            info = self.bulk_cell_to_dict(cell)
+            if not info == None:
+                if self.in_db(info['tweetid']):
+                    if verbose:
+                        print "Tweet %s has already been collected" % info['tweetid']
+                    continue
+                try:
+                    tweet = ff.tweet.Bulk(info)
+                    if not tweet.retweeted:
+                        self.add_to_db(tweet, team, verbose=verbose)
+                except:
+                    if verbose == True:
+                        print "Could not collect tweet %s." % (info['tweetid'])
+                        print "Error:", sys.exc_info()
+                    pass
 
     def search_recent(self, search, start, end, verbose=False):
         ''' Pages through search API for tweets under 7 days old
