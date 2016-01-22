@@ -375,7 +375,7 @@ class Twitter:
                 'return document.body.scrollHeight')
             count = 0
             while True:
-                time.sleep(1)
+                time.sleep(np.random.lognormal(1, .5, 1)[0])
                 browser.execute_script(
                     "window.scrollTo(0, document.body.scrollHeight);")
                 newheight = browser.execute_script(
