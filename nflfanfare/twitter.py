@@ -368,6 +368,11 @@ class Twitter:
         ''' Returns source from url as soup for bulk scraping
         '''
         try:
+
+            if platform.system() == 'Linux':
+                display = Display(visible=0, size=(800, 600))
+                display.start()
+
             browser = webdriver.Firefox()
             browser.get(url)
 
@@ -397,6 +402,8 @@ class Twitter:
         finally:
             browser.close()
             browser.quit()
+            if platform.system() == 'Linux':
+                display.stop()
 
     def bulk_historic(self, search, start, end, live=True, verbose=False):
         ''' Scrapes historic tweets in bulk and adds them to the database
