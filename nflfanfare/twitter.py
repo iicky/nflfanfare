@@ -152,7 +152,8 @@ class Twitter:
                 if verbose == True:
                     print "%s/%s - Adding %s: %s to database." % (outtweet['gameid'], teamid, tweet.username, tweet.tweettext)
                 result = ff.db.tweets.insert_one(outtweet)
-
+                if result.acknowledged == True:
+                    update = self.update_tweet_counts(outtweet['gameid'], outtweet['teamid'])
             else:
                 if verbose == True:
                     print "Tweet %s is already in the database." % tweet.tweetid
@@ -491,3 +492,31 @@ class Twitter:
             if not result == None:
                 return result['gameid']
         return None
+
+    def update_tweet_counts(self, gameid, teamid):
+        ''' Updates tweet count for team and gameid
+        '''
+        result = ff.db.games.find_one({'gameid': gameid})
+        try:
+            if teamid == result['hometeam']:
+                update = ff.db.games.update_one(
+                        {"gameid": gameid},
+                        {
+                            "$set": {
+                                'tweetcounts.hometeam': result['tweetcounts']['hometeam']+1,
+                                'tweetcounts.total': result['tweetcounts']['total']+1,
+                            }
+                        }
+                )   
+            elif teamid == result['awayteam']:
+                update = ff.db.games.update_one(
+                        {"gameid": gameid},
+                        {
+                            "$set": {
+                                'tweetcounts.awayteam': result['tweetcounts']['awayteam']+1,
+                                'tweetcounts.total': result['tweetcounts']['total']+1,
+                            }
+                        }
+                )       
+        except:
+            print "Could not update tweet counts for %s." % gameid   
