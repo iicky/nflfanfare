@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 import json
 import pandas as pd
 import pymongo
@@ -47,7 +47,7 @@ class Statistics:
         df = ff.team.teams()
         return df
 
-    def gametime_sentiment_by_team(gameid, teamid):
+    def gametime_sentiment_by_team(self, gameid, teamid):
         ''' Returns gametime sentment by game and teamid
         '''
         # Creates timeseries dataframe for gameid
@@ -92,3 +92,13 @@ class Statistics:
             tdf['time'] = tdf.index
             tdf = tdf.reset_index(drop=True)
             return json.loads(tdf.to_json(orient='records'))
+
+    def gametime_sentiment(self, gameid):
+        ''' Returns gametime sentment by game and teamid
+        '''
+        game = ff.db.games.find_one({'gameid': gameid})
+        game['homesent'] = self.gametime_sentiment_by_team(gameid, game['hometeam'])
+        game['awaysent'] = self.gametime_sentiment_by_team(gameid, game['awayteam'])
+
+        return game
+
