@@ -1,5 +1,5 @@
 from bson import json_util
-from flask import Flask, jsonify, render_template, Markup
+from flask import Flask, jsonify, Markup, render_template, request
 from app import app
 import json
 import pandas as pd
@@ -24,3 +24,18 @@ def tweetcount():
 def teaminfo():
     df = stats.teams_list()
     return df.to_json(orient='records')
+
+@app.route('/game', methods=['GET'])
+def game():
+    
+    gameid = request.args.get('gameid')
+    return render_template("charttest.html",
+                            gameid=gameid)
+
+@app.route('/gamesentiment', methods=['GET'])
+def gamesentiment():
+    gameid = request.args.get('gameid')
+
+    sent = stats.gametime_sentiment(gameid)
+
+    return Markup(json.dumps(sent, default=json_util.default))
