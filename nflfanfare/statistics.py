@@ -60,7 +60,7 @@ class Statistics:
         tweets = ff.db.tweets.aggregate([
             {'$match': {'gameid': gameid,
                         'teamid': teamid,
-                        'sentiment.sent_compound': {'$ne': '0'}
+                        'sentiment.sent_compound': {'$ne': 0}
                         }
              },
             {'$project': {'_id': 0,
