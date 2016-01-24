@@ -44,3 +44,5 @@ mysql_to_mongo.py
 team_test.py
 
 secrets.py
+
+*.svg
