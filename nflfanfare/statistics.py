@@ -76,12 +76,11 @@ class Statistics:
         if not df.empty:
             # Processes dataframe grouping
             df = df.set_index('postedtime')
-            df['sent_compound'] = df['sent_compound'].astype(float)
             group = df.groupby(pd.TimeGrouper('5Min'))
 
-            tdf['count'] = group.sent_compound.count()
+            tdf['count'] = group.sent_compound.count().values
             tdf['count'] = tdf['count'].fillna(0).astype(int)
-            tdf['mean_sent'] = group.sent_compound.mean()
+            tdf['mean_sent'] = group.sent_compound.mean().values
             tdf['time'] = tdf.index
             tdf = tdf.reset_index(drop=True)
             return json.loads(tdf.to_json(orient='records'))
