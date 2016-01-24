@@ -97,8 +97,20 @@ class Statistics:
         ''' Returns gametime sentment by game and teamid
         '''
         game = ff.db.games.find_one({'gameid': gameid})
-        game['homesent'] = self.gametime_sentiment_by_team(gameid, game['hometeam'])
-        game['awaysent'] = self.gametime_sentiment_by_team(gameid, game['awayteam'])
+
+        # Team colors
+        homecolors = ff.db.teams.find_one({'teamid': game['hometeam']})['colors']
+        awaycolors = ff.db.teams.find_one({'teamid': game['awayteam']})['colors']
+
+        game['homecolor'] = homecolors[0]
+        if game['homecolor'] == awaycolors[0]:
+            game['awaycolor'] = awaycolors[1]
+        else:
+            game['awaycolor'] = awaycolors[0]
+
+        game['homesent'] = self.gametime_sentiment_by_team(gameid, game[
+                                                           'hometeam'])
+        game['awaysent'] = self.gametime_sentiment_by_team(gameid, game[
+                                                           'awayteam'])
 
         return game
-
