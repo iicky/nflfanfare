@@ -87,7 +87,7 @@ class Twitter:
                 display.start()
 
             # Open URL in Chrome driver
-            browser = webdriver.Chrome()
+            browser = webdriver.Firefox()
             browser.get(url)
             time.sleep(np.random.lognormal(1, .5, 1)[0])
 
