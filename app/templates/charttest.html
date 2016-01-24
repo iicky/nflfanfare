@@ -1,6 +1,20 @@
 <html>
 <head>
 
+<style>
+
+.y.axis { 
+  fill: none; 
+  stroke: black; 
+  stroke-width:; 1; 
+} 
+
+.tick { 
+  fill: black;
+  stroke: none; 
+} 
+
+</style>
 
 </head>
 
@@ -22,20 +36,12 @@ $.getJSON("gamesentiment?gameid="+gameid, function(d) {
 	$("#loading").hide();
 
 
-var margin = {top: 30, right: 20, bottom: 30, left: 50},
-    width = 600 - margin.left - margin.right,
-    height = 270 - margin.top - margin.bottom;
+var margin = {top: 30, right: 20, bottom: 30, left: 50}
+width = 700 - margin.left - margin.right,
+height = 270 - margin.top - margin.bottom;
 
-var x = d3.time.scale().range([0, width]);
+var x = d3.time.scale().range([(height/2)+50, width]);
 var y = d3.scale.linear().range([height, 0]);
-
-var parseDate = d3.time.format("%d-%b-%y").parse;
-
-var x = d3.time.scale().range([0, width]);
-var y = d3.scale.linear().range([height, 0]);
-
-var xAxis = d3.svg.axis().scale(x)
-    .orient("bottom").ticks(5);
 
 var yAxis = d3.svg.axis().scale(y)
     .orient("left").ticks(5);
@@ -57,31 +63,62 @@ var svg = d3.select("body")
 x.domain(d3.extent(data['homesent'], function(d) { return d['time']; }));
 y.domain([-1, 1]);
 
-// Add the valueline path.
+// Home team line
 svg.append("path")
     .attr("class", "line")
-    .attr("stroke", "blue")
+    .attr("stroke", '#'+data['homecolor'])
     .attr("fill", "none")
-    .attr("stroke-width", "5px")
+    .attr("stroke-width", "3px")
     .attr("d", valueline(data['homesent']));
 
+// Away team line
 svg.append("path")
     .attr("class", "line")
-    .attr("stroke", "black")
+    .attr("stroke", '#'+data['awaycolor'])
     .attr("fill", "none")
-    .attr("stroke-width", "5px")
+    .attr("stroke-width", "3px")
     .attr("d", valueline(data['awaysent']));
 
-// Add the X Axis
-svg.append("g")
-    .attr("class", "x axis")
-    .attr("transform", "translate(0," + height + ")")
-    .call(xAxis);
-
-// Add the Y Axis
+// y axis
 svg.append("g")
     .attr("class", "y axis")
+	.attr("transform", "translate(" + eval((height/2)+50) + ",0)")
     .call(yAxis);
+
+
+/*
+svg.append('rect')
+	.attr("height", (height/2)-10)
+	.attr("width", (height/2)-10)
+	.attr("stroke", "#"+data.homecolor)
+	.attr("stroke-width", "3px")
+	.attr("fill", "none")
+	.attr("x", 0).attr("y", 0)
+	.attr("rx", 10).attr("ry", 10);
+*/
+
+svg.append('image')
+	.attr("height", (height/2)-20)
+	.attr("width", (height/2)-20)
+	.attr("xlink:href", "/static/images/svg/"+data.hometeam+".svg")
+	.attr("x", 0+10).attr("y", 0+10);
+
+/*
+svg.append('rect')
+	.attr("height", (height/2)-10)
+	.attr("width", (height/2)-10)
+	.attr("stroke", "#"+data.awaycolor)
+	.attr("stroke-width", "3px")
+	.attr("fill", "none")
+	.attr("x", 0).attr("y", height/2)
+	.attr("rx", 10).attr("ry", 10);
+*/
+
+svg.append('image')
+	.attr("height", (height/2)-20)
+	.attr("width", (height/2)-20)
+	.attr("xlink:href", "/static/images/svg/"+data.awayteam+".svg")
+	.attr("x", 0+10).attr("y", (height/2)+10);
 
 });
 
