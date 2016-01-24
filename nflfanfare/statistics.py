@@ -53,42 +53,47 @@ class Statistics:
         # Creates timeseries dataframe for gameid
         game = ff.db.games.find_one({'gameid': gameid})
         pre = game['starttime'] - timedelta(hours=1)
-        times = [pre + timedelta(minutes=x) for x in xrange(0, 5 * 60, 5)]
-        tdf = pd.DataFrame(index=times)
-
+        times = [pre + timedelta(minutes=x) for x in xrange(0, 5*60, 5)]
+        tdf = pd.DataFrame({'time':times})
+        
         # Find tweets by teamid
         tweets = ff.db.tweets.aggregate([
-            {'$match': {'gameid': gameid,
-                        'teamid': teamid,
+            {'$match': {'gameid': gameid, 
+                        'teamid': teamid, 
                         'sentiment.sent_compound': {'$ne': 0}
-                        }
-             },
+                       }
+            },
             {'$project': {'_id': 0,
                           'teamid': '$teamid',
                           'sent_compound': '$sentiment.sent_compound',
                           'postedtime': '$postedtime'
-                          }
-             }
-        ])
+                         }
+            }
+            ])
         df = pd.DataFrame(list(tweets))
-
+        
         # Returns dataframe of gametime sentiment
         if not df.empty:
-            # Processes dataframe grouping
             df = df.set_index('postedtime')
-            group = df.groupby(pd.TimeGrouper('5Min'))
 
+            for i in range(0, len(tdf.time)):
+                index = df.index.indexer_between_time(tdf.time[i].time(), 
+                                                      (tdf.time[i]+timedelta(minutes=5)).time(),
+                                                      include_end=False)
+                df.ix[index, 'group'] = i
+
+            group = df.groupby('group')    
+                
             tdf['count'] = group.sent_compound.count().values
             tdf['count'] = tdf['count'].fillna(0).astype(int)
             tdf['mean_sent'] = group.sent_compound.mean().values
-            tdf['time'] = tdf.index
-            tdf = tdf.reset_index(drop=True)
+            tdf = tdf.reset_index(drop=True)    
+                
             return json.loads(tdf.to_json(orient='records'))
-
+        
         else:
             tdf['count'] = 0
             tdf['mean'] = None
-            tdf['time'] = tdf.index
             tdf = tdf.reset_index(drop=True)
             return json.loads(tdf.to_json(orient='records'))
 
