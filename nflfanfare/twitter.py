@@ -165,22 +165,22 @@ class Twitter:
     def start_end_times(self, start, end):
         ''' Converts start and end times for a game 
         '''
-        if type(start) == datetime:
-            # Convert to UTC timezone
-            start = pytz.timezone('UTC').localize(start)
-            end = pytz.timezone('UTC').localize(end)
+        if not type(start) == datetime:
 
-            # Convert to local timezone
-            local = tzlocal.get_localzone()
-            start = start.astimezone(local)
-            end = end.astimezone(local)
+            start = datetime.strptime(start, "%Y-%m-%d %H:%M:%S")
+            end = datetime.strptime(end, "%Y-%m-%d %H:%M:%S")
 
-            # Make timestamp
-            start = int(time.mktime(start.timetuple()))
-            end = int(time.mktime(end.timetuple()))
-        else:
-            start = int(time.mktime(time.strptime(start, "%Y-%m-%d %H:%M")))
-            end = int(time.mktime(time.strptime(end, "%Y-%m-%d %H:%M")))
+        start = pytz.timezone('UTC').localize(start)
+        end = pytz.timezone('UTC').localize(end)
+
+        # Convert to local timezone
+        local = tzlocal.get_localzone()
+        start = start.astimezone(local)
+        end = end.astimezone(local)
+
+        # Make timestamp
+        start = int(time.mktime(start.timetuple()))
+        end = int(time.mktime(end.timetuple()))
 
         return start, end
 
