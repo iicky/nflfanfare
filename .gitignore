@@ -46,3 +46,7 @@ team_test.py
 secrets.py
 
 *.svg
+
+sent_fix.py
+
+manualbulk.py
