@@ -348,7 +348,8 @@ class Schedule:
             'seasontype': row['seasontype'],
             'hometeam': row['hometeam'],
             'awayteam': row['awayteam'],
-            'starttime': row['starttime'] if 'starttime' in row.index else None
+            'starttime': row['starttime'] if 'starttime' in row.index else None,
+            'tweetcounts': {'hometeam': 0, 'awayteam': 0, 'total': 0}
         }
         try:
             result = ff.db.games.insert_one(game)
