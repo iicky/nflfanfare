@@ -438,27 +438,27 @@ class Schedule:
         onehour = 60 * 60 * 1000
         fourhours = 4 * onehour
         result = ff.db.games.aggregate([
-                { '$project': {
-                    'gameid': '$gameid',
-                    'hometeam': '$hometeam',
-                    'awayteam': '$awayteam',
-                    'starttime': '$starttime',
-                    'start': { '$subtract': ['$starttime', onehour] },
-                    'end': { '$add': ['$starttime', fourhours] }
-                    }
-                },
-                {'$match': { 
-                    '$and': [ 
-                        { '$or': [ { 'hometeam': teamid }, 
-                                   { 'awayteam': teamid } 
-                                 ] },
-                        { 'start': { '$lt': postedtime } },
-                        { 'end': { '$gte': postedtime } }
-                    ]
-                    }
-                }
+            {'$project': {
+                'gameid': '$gameid',
+                'hometeam': '$hometeam',
+                'awayteam': '$awayteam',
+                'starttime': '$starttime',
+                'start': {'$subtract': ['$starttime', onehour]},
+                'end': {'$add': ['$starttime', fourhours]}
+            }
+            },
+            {'$match': {
+                '$and': [
+                    {'$or': [{'hometeam': teamid},
+                             {'awayteam': teamid}
+                             ]},
+                    {'start': {'$lt': postedtime}},
+                    {'end': {'$gte': postedtime}}
+                ]
+            }
+            }
 
-            ])
+        ])
         if not result == None:
             for r in result:
                 if 'gameid' in r:
@@ -514,22 +514,55 @@ class Schedule:
 
         try:
             result = ff.db.games.update_one(
-                    {"gameid": gameid},
-                    {
-                        "$set": {
-                            'tweetcounts.hometeam': counts['hometeam'],
-                            'tweetcounts.awayteam': counts['awayteam'],
-                            'tweetcounts.total': counts['total'],
-                        }
+                {"gameid": gameid},
+                {
+                    "$set": {
+                        'tweetcounts.hometeam': counts['hometeam'],
+                        'tweetcounts.awayteam': counts['awayteam'],
+                        'tweetcounts.total': counts['total'],
                     }
-            )            
+                }
+            )
         except:
             print "Could not update %s tweet counts." % gameid
 
     def update_db_tweet_counts(self):
         ''' Updates tweet counts for games in the database
         '''
-        games = list(ff.db.games.find({},{'gameid':1, '_id':0}))
+        games = list(ff.db.games.find({}, {'gameid': 1, '_id': 0}))
         for g in games:
-            self.update_game_tweet_counts(g['gameid'])            
+            self.update_game_tweet_counts(g['gameid'])
+
+    def update_game_sentiment(self, gameid):
+        ''' Updates game sentiment in database for a gameid
+        '''
+        game = ff.db.games.find_one(
+            {'gameid': gameid}, 
+            {'gameid': 1, '_id': 0, 'hometeam': 1, 'awayteam': 1})
+
+        hometeam = ff.stats.gametime_sentiment_by_team(
+            game['gameid'], game['hometeam'])
+        awayteam = ff.stats.gametime_sentiment_by_team(
+            game['gameid'], game['awayteam'])
+
+        try:
+            result = ff.db.games.update_one(
+                {"gameid": gameid},
+                {
+                    "$set": {
+                        'sentiment.hometeam': hometeam,
+                        'sentiment.awayteam': awayteam
+                    }
+                }
+            )
+        except:
+            print "Could not update %s game sentiment." % gameid
+
+    def update_db_game_sentiment(self):
+        ''' Updates gametime sentiment for games in the database
+        '''
+        games = list(ff.db.games.find({}, {'gameid': 1, '_id': 0}))
+        for g in games:
+            print g['gameid']
+            self.update_game_sentiment(g['gameid'])
 
