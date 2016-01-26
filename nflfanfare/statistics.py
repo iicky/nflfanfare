@@ -74,28 +74,29 @@ class Statistics:
         
         # Returns dataframe of gametime sentiment
         if not df.empty:
-            df = df.set_index('postedtime')
+            tindex = pd.DatetimeIndex(df['postedtime'])
 
             for i in range(0, len(tdf.time)):
-                index = df.index.indexer_between_time(tdf.time[i].time(), 
-                                                      (tdf.time[i]+timedelta(minutes=5)).time(),
-                                                      include_end=False)
+                index = tindex.indexer_between_time(tdf.time[i].time(), 
+                                            (tdf.time[i]+timedelta(minutes=5)).time(),
+                                            include_end=False)
                 df.ix[index, 'group'] = i
-
+                            
             group = df.groupby('group')    
-                
-            tdf['count'] = group.sent_compound.count().values
+            counts = group.sent_compound.count()
+            means = group.sent_compound.mean()
+            stats = pd.concat({'count': counts, 'mean_sent': means}, axis=1)
+            tdf = tdf.merge(stats, how='outer', left_index=True, right_index=True)
+            
             tdf['count'] = tdf['count'].fillna(0).astype(int)
-            tdf['mean_sent'] = group.sent_compound.mean().values
-            tdf = tdf.reset_index(drop=True)    
-                
-            return json.loads(tdf.to_json(orient='records'))
-        
+            tdf = tdf.reset_index(drop=True)   
+            return tdf.to_dict(orient='records')
+            
         else:
             tdf['count'] = 0
-            tdf['mean'] = None
+            tdf['mean_sent'] = None
             tdf = tdf.reset_index(drop=True)
-            return json.loads(tdf.to_json(orient='records'))
+            return tdf.to_dict(orient='records')
 
     def gametime_sentiment(self, gameid):
         ''' Returns gametime sentment by game and teamid
@@ -111,10 +112,5 @@ class Statistics:
             game['awaycolor'] = awaycolors[1]
         else:
             game['awaycolor'] = awaycolors[0]
-
-        game['homesent'] = self.gametime_sentiment_by_team(gameid, game[
-                                                           'hometeam'])
-        game['awaysent'] = self.gametime_sentiment_by_team(gameid, game[
-                                                           'awayteam'])
 
         return game
