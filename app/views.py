@@ -36,6 +36,6 @@ def game():
 def gamesentiment():
     gameid = request.args.get('gameid')
 
-    sent = stats.gametime_sentiment(gameid)
+    sent = stats.gametime_info(gameid)
 
     return Markup(json.dumps(sent, default=json_util.default))

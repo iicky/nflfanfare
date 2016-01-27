@@ -536,22 +536,14 @@ class Schedule:
     def update_game_sentiment(self, gameid):
         ''' Updates game sentiment in database for a gameid
         '''
-        game = ff.db.games.find_one(
-            {'gameid': gameid}, 
-            {'gameid': 1, '_id': 0, 'hometeam': 1, 'awayteam': 1})
-
-        hometeam = ff.stats.gametime_sentiment_by_team(
-            game['gameid'], game['hometeam'])
-        awayteam = ff.stats.gametime_sentiment_by_team(
-            game['gameid'], game['awayteam'])
+        df = ff.stats.gametime_sentiment(gameid).to_dict(orient='records')
 
         try:
             result = ff.db.games.update_one(
                 {"gameid": gameid},
                 {
                     "$set": {
-                        'sentiment.hometeam': hometeam,
-                        'sentiment.awayteam': awayteam
+                        'gametime': df
                     }
                 }
             )
@@ -565,4 +557,3 @@ class Schedule:
         for g in games:
             print g['gameid']
             self.update_game_sentiment(g['gameid'])
-

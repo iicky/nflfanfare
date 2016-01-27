@@ -47,58 +47,96 @@ class Statistics:
         df = ff.team.teams()
         return df
 
-    def gametime_sentiment_by_team(self, gameid, teamid):
-        ''' Returns gametime sentment by game and teamid
+    def gametimes(self, gameid):
+        ''' Returns timeseries for gameid
         '''
-        # Creates timeseries dataframe for gameid
         game = ff.db.games.find_one({'gameid': gameid})
         pre = game['starttime'] - timedelta(hours=1)
-        times = [pre + timedelta(minutes=x) for x in xrange(0, 5*60, 5)]
-        tdf = pd.DataFrame({'time':times})
-        
+        times = [pre + timedelta(minutes=x) for x in xrange(0, 5 * 60, 5)]
+
+        return times
+
+    def game_tweets_df(self, gameid):
+        ''' Returns tweets dataframe for gameid
+        '''
+        times = self.gametimes(gameid)
+
         # Find tweets by teamid
         tweets = ff.db.tweets.aggregate([
-            {'$match': {'gameid': gameid, 
-                        'teamid': teamid, 
-                        'sentiment.sent_compound': {'$ne': 0}
-                       }
-            },
+            {'$match': {'gameid': gameid}},
             {'$project': {'_id': 0,
                           'teamid': '$teamid',
+                          'tweettext': '$tweettext',
+                          'hashtags': '$hashtags',
+                          'usermentions': '$usermentions',
                           'sent_compound': '$sentiment.sent_compound',
                           'postedtime': '$postedtime'
-                         }
-            }
-            ])
+                          }
+             }
+        ])
+
         df = pd.DataFrame(list(tweets))
-        
-        # Returns dataframe of gametime sentiment
         if not df.empty:
             tindex = pd.DatetimeIndex(df['postedtime'])
-
-            for i in range(0, len(tdf.time)):
-                index = tindex.indexer_between_time(tdf.time[i].time(), 
-                                            (tdf.time[i]+timedelta(minutes=5)).time(),
-                                            include_end=False)
-                df.ix[index, 'group'] = i
-                            
-            group = df.groupby('group')    
-            counts = group.sent_compound.count()
-            means = group.sent_compound.mean()
-            stats = pd.concat({'count': counts, 'mean_sent': means}, axis=1)
-            tdf = tdf.merge(stats, how='outer', left_index=True, right_index=True)
-            
-            tdf['count'] = tdf['count'].fillna(0).astype(int)
-            tdf = tdf.reset_index(drop=True)   
-            return tdf.to_dict(orient='records')
-            
-        else:
-            tdf['count'] = 0
-            tdf['mean_sent'] = None
-            tdf = tdf.reset_index(drop=True)
-            return tdf.to_dict(orient='records')
+            for i in range(0, len(times)):
+                index = tindex.indexer_between_time(times[i].time(),
+                                                    (times[
+                                                     i] + timedelta(minutes=5)).time(),
+                                                    include_end=False)
+                df.ix[index, 'timegroup'] = i
+                df.ix[index, 'gametime'] = times[i]
+        return df
 
     def gametime_sentiment(self, gameid):
+        ''' Returns dataframe of gametime sentiment
+        '''
+        game = ff.db.games.find_one({'gameid': gameid})
+        tdf = self.game_tweets_df(gameid)
+        gdf = pd.DataFrame({'time': self.gametimes(gameid)})
+
+        if not tdf.empty:
+            tdf = tdf[tdf.sent_compound != 0]
+            group = tdf.groupby(['teamid', 'timegroup'])
+            counts = group.sent_compound.count()
+            means = group.sent_compound.mean()
+            teams = tdf.teamid.unique()
+
+            # Handling empty teams
+            if game['hometeam'] in teams:
+                stats = pd.concat({'homecount': counts[game['hometeam']],
+                                   'homesentiment': means[game['hometeam']],
+                                   }, axis=1)
+                gdf = gdf.merge(stats, how='outer',
+                                left_index=True, right_index=True)
+            else:
+                gdf['homecount'] = 0
+                gdf['homesentiment'] = None
+
+            if game['awayteam'] in teams:
+                stats = pd.concat({'awaycount': counts[game['awayteam']],
+                                   'awaysentiment': means[game['awayteam']],
+                                   }, axis=1)
+                gdf = gdf.merge(stats, how='outer',
+                                left_index=True, right_index=True)
+            else:
+                gdf['awaycount'] = 0
+                gdf['awaysentiment'] = None
+
+            gdf['homecount'] = gdf['homecount'].fillna(0).astype(int)
+            gdf['awaycount'] = gdf['awaycount'].fillna(0).astype(int)
+            gdf = gdf.where((pd.notnull(gdf)), None)
+
+            return gdf
+
+        else:
+            gdf['homecount'] = 0
+            gdf['awaycount'] = 0
+            gdf['homesentiment'] = None
+            gdf['awaysentiment'] = None
+
+            return gdf
+
+    def gametime_info(self, gameid):
         ''' Returns gametime sentment by game and teamid
         '''
         game = ff.db.games.find_one({'gameid': gameid})
