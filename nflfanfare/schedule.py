@@ -557,3 +557,67 @@ class Schedule:
         for g in games:
             print g['gameid']
             self.update_game_sentiment(g['gameid'])
+
+    def fix_location(self, location):
+        ''' Changes pfrid to teamid in play location
+        '''
+        location = location.split()
+        return '%s %s' % (ff.team.teamid_from_pfrid(location[0].lower()), location[1])
+
+    def pfr_plays(self, gameid):
+        ''' Returns list of plays from Pro Football Reference
+        '''
+        game = ff.db.games.find_one({'gameid':gameid})
+        start = pytz.timezone('UTC').localize(game['starttime'])
+        start = start.astimezone(pytz.timezone('US/Eastern'))
+        pfrid = ff.team.pfrid_from_teamid(game['hometeam'])
+        url = self.pfr_boxscore_link(start.year, start.month, start.day, pfrid)
+
+        try:
+            # Open url in browser
+            browser = webdriver.PhantomJS(executable_path='/usr/local/bin/phantomjs',
+                                              service_log_path=os.path.devnull)
+            browser.get(url)
+
+            # Click button to get CSV
+            csvlink = browser.find_elements_by_xpath(
+                "//span[contains(text(), 'CSV')]")
+            csvlink[1].click()
+
+            # Get the source code for page
+            html = browser.page_source.encode("utf-8")
+            soup = BeautifulSoup(html, "html.parser")
+        except:
+            return None
+        finally:
+            browser.close()
+            browser.quit()
+                
+        try:
+            # Find preformatted CSV
+            plays = ""
+            ids = soup.find('pre', attrs={'id': 'csv_pbp_data'})
+            for i in ids:
+                plays = i
+                    
+            # Reformat CSV            
+            plays = plays.split('\n')
+            csv = ''
+            for line in plays:
+                if (not line == ''
+                        and not line[0] == ','
+                        and not 'Quarter' in line):
+                    csv += '%s\n' % line
+      
+            # Read into pandas dataframe
+            columns = ['quarter', 'time', 'down', 'togo',
+                            'location', 'description', 'awayscore', 'homescore']
+            df = pd.read_csv(StringIO(csv), usecols=[0, 1, 2, 3, 4, 5, 6, 7], names=columns)
+            df = df.where((pd.notnull(df)), None)
+            df['location'] = df.location.apply(self.fix_location)
+
+            return df
+                
+        except:
+            print "Could not scrape plays from PFR."
+            return None
