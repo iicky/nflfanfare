@@ -68,6 +68,14 @@ class Team:
         except:
             return None
 
+    def teamid_from_pfrid(self, pfrid):
+        ''' Returns the team id from PFR ID
+        '''
+        try:
+            return ff.db.teams.find_one({'pfrid': pfrid})['teamid']
+        except:
+            return None
+
     def teams(self):
         ''' Returns teams as dataframe
         '''
