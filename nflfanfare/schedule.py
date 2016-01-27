@@ -621,3 +621,35 @@ class Schedule:
         except:
             print "Could not scrape plays from PFR."
             return None
+
+    def nflgame_plays(self, gameid):
+        
+        game = ff.db.games.find_one({'gameid':gameid})
+        info = nflgame.game.Game(game['eid'])
+        drives = info.data['drives']
+        
+        events = {'quarter': [],
+                 'time': [],
+                 'team': [],
+                 'drive': [],
+                 'description': []
+                 }
+        
+        for d in drives:
+            if not d == 'crntdrv':
+                plays = drives[d]['plays']
+                for p in plays:
+                        
+                    events['quarter'].append(drives[d]['qtr'])
+                    events['time'].append(plays[p]['time'])
+                    events['team'].append(drives[d]['end']['team'])
+                    events['drive'].append(d)
+                    events['description'].append(plays[p]['desc'])
+            
+        df = pd.DataFrame(events)
+        
+        # Jacksonville fixes
+        df['team'] = df.team.apply(lambda x: 'JAX' if x == 'JAC' else x)
+        df['description'] = df.description.apply(lambda x: x.replace('JAC', 'JAX') if 'JAC' in x else x)
+        
+        return df
