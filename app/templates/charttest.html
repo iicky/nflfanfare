@@ -1,18 +1,68 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+
 <html>
 <head>
 
 <style>
 
-.y.axis { 
-  fill: none; 
-  stroke: black; 
-  stroke-width:; 1; 
+@font-face {
+    font-family: 'FontAwesome';
+    src: url('static/fonts/fontawesome-webfont.woff');
+    font-weight: normal;
+    font-style: normal;
+}
+
+.x.axis { 
+	fill: none; 
+	stroke: gray; 
+	stroke-width: 2;
+	shape-rendering: crispEdges;
 } 
 
-.tick { 
-  fill: black;
-  stroke: none; 
+.x.axis tick {
+	stroke: none;
+}
+
+.x.axis text {
+	display: none;
+}
+
+.y.axis { 
+	fill: none; 
+	stroke: gray; 
+	stroke-width: 2; 
+	opacity: 100%;
+	shape-rendering: crispEdges;
+
 } 
+
+.y.axis tick {
+	stroke: gray;
+}
+
+.y.axis text { 
+	fill: black;
+	stroke: none;
+	font-family: "FontAwesome";
+	font-size: 1.25rem;
+} 
+
+#yaxishappy {
+	fill: green;
+	stroke-width: .5; 
+
+}
+
+#yaxismeh {
+	fill: gray;
+	stroke-width: .5; 
+}
+
+#yaxissad {
+	fill: red;
+	stroke-width: .5; 
+}
 
 </style>
 
@@ -23,7 +73,7 @@
 
 </body>
 
-<script src="http://d3js.org/d3.v3.min.js"></script>
+<script charset="utf-8" src="http://d3js.org/d3.v3.min.js"></script>
 <script src="http://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
 
 <script>
@@ -35,20 +85,39 @@ $.getJSON("gamesentiment?gameid="+gameid, function(d) {
 	data = d;
 	$("#loading").hide();
 
+var prestart = d3.min(data.gametime, function(d){ return d.time.$date; });
+var postend = d3.max(data.gametime, function(d){ return d.time.$date; });
+
+console.log(new Date(data.gametime[0].time.$date));
+console.log(new Date(data.gametime[59].time.$date));
 
 var margin = {top: 30, right: 20, bottom: 30, left: 50}
 width = 700 - margin.left - margin.right,
-height = 270 - margin.top - margin.bottom;
+height = 300 - margin.top - margin.bottom;
 
 var x = d3.time.scale().range([(height/2)+50, width]);
 var y = d3.scale.linear().range([height, 0]);
 
-var yAxis = d3.svg.axis().scale(y)
-    .orient("left").ticks(5);
 
-var valueline = d3.svg.line()
-    .x(function(d) { return x(d['time']); })
-    .y(function(d) { return y(d['mean_sent']); });
+var yAxis = d3.svg.axis().scale(y)
+    .orient("left")
+    .ticks(5)
+    .tickFormat(function(d){
+    	if(d == 1) { return '\uf118' }
+    	else if(d == 0) { return "\uf11a" }
+    	else if(d == -1) { return "\uf119"}
+      	});
+
+var xAxis = d3.svg.axis().scale(x).ticks(0)
+    .orient("middle").outerTickSize(0);
+
+var homeline = d3.svg.line()
+    .x(function(d) { return x(d.time.$date); })
+    .y(function(d) { return y(d.homesentiment); });
+
+var awayline = d3.svg.line()
+    .x(function(d) { return x(d.time.$date); })
+    .y(function(d) { return y(d.awaysentiment); });
 
 var svg = d3.select("body")
     .append("svg")
@@ -60,30 +129,47 @@ var svg = d3.select("body")
 
 
 // Scale the range of the data
-x.domain(d3.extent(data['homesent'], function(d) { return d['time']; }));
+x.domain(d3.extent(data.gametime, function(d) { return d.time.$date; }));
 y.domain([-1, 1]);
+
+// x axis
+svg.append("g")
+    .attr("class", "x axis")
+	.attr("transform", "translate(" + 0 + "," + eval(height/2) + ")")
+    .call(xAxis);
+
+svg.append("g")         
+        .attr("class", "grid")
+        .attr("transform", "translate(0," + height + ")")
 
 // Home team line
 svg.append("path")
     .attr("class", "line")
-    .attr("stroke", '#'+data['homecolor'])
+    .attr("stroke", '#'+data.homecolor)
     .attr("fill", "none")
     .attr("stroke-width", "3px")
-    .attr("d", valueline(data['homesent']));
+    .attr("d", homeline(data.gametime));
 
 // Away team line
 svg.append("path")
     .attr("class", "line")
-    .attr("stroke", '#'+data['awaycolor'])
+    .attr("stroke", '#'+data.awaycolor)
     .attr("fill", "none")
     .attr("stroke-width", "3px")
-    .attr("d", valueline(data['awaysent']));
+    .attr("d", awayline(data.gametime));
 
 // y axis
 svg.append("g")
     .attr("class", "y axis")
 	.attr("transform", "translate(" + eval((height/2)+50) + ",0)")
-    .call(yAxis);
+    .call(yAxis)
+svg.select(".y.axis")
+	.selectAll("text")
+    .attr("id", function(d){
+    	if(d == 1) { return 'yaxishappy' }
+    	else if(d == 0) { return "yaxismeh" }
+    	else if(d == -1) { return "yaxissad"}
+      	});
 
 
 /*
@@ -121,7 +207,6 @@ svg.append('image')
 	.attr("x", 0+10).attr("y", (height/2)+10);
 
 });
-
 
 </script>
 
