@@ -565,9 +565,9 @@ class Schedule:
         return '%s %s' % (ff.team.teamid_from_pfrid(location[0].lower()), location[1])
 
     def pfr_plays(self, gameid):
-        ''' Returns list of plays from Pro Football Reference
+        ''' Returns dataframe of plays from Pro Football Reference
         '''
-        game = ff.db.games.find_one({'gameid':gameid})
+        game = ff.db.games.find_one({'gameid': gameid})
         start = pytz.timezone('UTC').localize(game['starttime'])
         start = start.astimezone(pytz.timezone('US/Eastern'))
         pfrid = ff.team.pfrid_from_teamid(game['hometeam'])
@@ -576,7 +576,7 @@ class Schedule:
         try:
             # Open url in browser
             browser = webdriver.PhantomJS(executable_path='/usr/local/bin/phantomjs',
-                                              service_log_path=os.path.devnull)
+                                          service_log_path=os.path.devnull)
             browser.get(url)
 
             # Click button to get CSV
@@ -592,15 +592,15 @@ class Schedule:
         finally:
             browser.close()
             browser.quit()
-                
+
         try:
             # Find preformatted CSV
             plays = ""
             ids = soup.find('pre', attrs={'id': 'csv_pbp_data'})
             for i in ids:
                 plays = i
-                    
-            # Reformat CSV            
+
+            # Reformat CSV
             plays = plays.split('\n')
             csv = ''
             for line in plays:
@@ -608,48 +608,53 @@ class Schedule:
                         and not line[0] == ','
                         and not 'Quarter' in line):
                     csv += '%s\n' % line
-      
+
             # Read into pandas dataframe
             columns = ['quarter', 'time', 'down', 'togo',
-                            'location', 'description', 'awayscore', 'homescore']
-            df = pd.read_csv(StringIO(csv), usecols=[0, 1, 2, 3, 4, 5, 6, 7], names=columns)
+                       'location', 'description', 'awayscore', 'homescore']
+            df = pd.read_csv(StringIO(csv), usecols=[
+                             0, 1, 2, 3, 4, 5, 6, 7], names=columns)
             df = df.where((pd.notnull(df)), None)
             df['location'] = df.location.apply(self.fix_location)
 
             return df
-                
+
         except:
             print "Could not scrape plays from PFR."
             return None
 
     def nflgame_plays(self, gameid):
-        
-        game = ff.db.games.find_one({'gameid':gameid})
+        ''' Returns dataframe of plays from nflgame
+        '''
+        game = ff.db.games.find_one({'gameid': gameid})
         info = nflgame.game.Game(game['eid'])
         drives = info.data['drives']
-        
+
         events = {'quarter': [],
-                 'time': [],
-                 'team': [],
-                 'drive': [],
-                 'description': []
-                 }
-        
+                  'time': [],
+                  'team': [],
+                  'drive': [],
+                  'description': []
+                  }
+
         for d in drives:
             if not d == 'crntdrv':
                 plays = drives[d]['plays']
                 for p in plays:
-                        
+
                     events['quarter'].append(drives[d]['qtr'])
                     events['time'].append(plays[p]['time'])
                     events['team'].append(drives[d]['end']['team'])
                     events['drive'].append(d)
                     events['description'].append(plays[p]['desc'])
-            
+
         df = pd.DataFrame(events)
-        
+
         # Jacksonville fixes
         df['team'] = df.team.apply(lambda x: 'JAX' if x == 'JAC' else x)
-        df['description'] = df.description.apply(lambda x: x.replace('JAC', 'JAX') if 'JAC' in x else x)
-        
+        df['description'] = df.description.apply(
+            lambda x: x.replace('JAC', 'JAX') if 'JAC' in x else x)
+
         return df
+
+
