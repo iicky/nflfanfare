@@ -50,3 +50,17 @@ secrets.py
 sent_fix.py
 
 manualbulk.py
+
+manualbulkteam.py
+
+app/static/fonts/fontawesome-webfont.woff
+
+SQL/.DS_Store
+
+nflfanfare/.DS_Store
+
+app/static/js/.DS_Store
+
+app/.DS_Store
+
+.DS_Store
