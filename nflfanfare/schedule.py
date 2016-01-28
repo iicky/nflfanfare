@@ -623,6 +623,22 @@ class Schedule:
             print "Could not scrape plays from PFR."
             return None
 
+    def score_increase(self, note):
+        ''' Returns score increase based on nflgame play note
+        '''
+        if note == 'TD':
+            return 6
+        elif note == 'FG':
+            return 3
+        elif note == '2PS':
+            return 2
+        elif note == 'SAF':
+            return 2
+        elif note == 'XP':
+            return 1
+        else:
+            return 0
+
     def nflgame_plays(self, gameid):
         ''' Returns dataframe of plays from nflgame
         '''
@@ -630,10 +646,15 @@ class Schedule:
         info = nflgame.game.Game(game['eid'])
         drives = info.data['drives']
 
-        events = {'quarter': [],
+        events = {'playid': [],
+                  'quarter': [],
                   'time': [],
                   'team': [],
                   'drive': [],
+                  'down': [],
+                  'ydstogo': [],
+                  'ydline': [],
+                  'note': [],
                   'description': []
                   }
 
@@ -641,20 +662,42 @@ class Schedule:
             if not d == 'crntdrv':
                 plays = drives[d]['plays']
                 for p in plays:
-
+                    events['playid'].append(p)
                     events['quarter'].append(drives[d]['qtr'])
                     events['time'].append(plays[p]['time'])
                     events['team'].append(drives[d]['end']['team'])
                     events['drive'].append(d)
+                    events['down'].append(plays[p]['down'])
+                    events['ydstogo'].append(plays[p]['ydstogo'])
+                    events['ydline'].append(plays[p]['yrdln'])
+                    events['note'].append(plays[p]['note'])
                     events['description'].append(plays[p]['desc'])
-
         df = pd.DataFrame(events)
 
         # Jacksonville fixes
         df['team'] = df.team.apply(lambda x: 'JAX' if x == 'JAC' else x)
         df['description'] = df.description.apply(
             lambda x: x.replace('JAC', 'JAX') if 'JAC' in x else x)
+        df['ydline'] = df.ydline.apply(
+            lambda x: x.replace('JAC', 'JAX') if 'JAC' in x else x)
+
+        # Change playid to integer and sort
+        df['playid'] = df.playid.astype(int)
+        df = df.sort_values(by='playid', ascending=True)
+
+        # Calculate current score for each play
+        homescore = []
+        awayscore = []
+        hscore = 0
+        ascore = 0
+        for index, row in df.iterrows():
+            if row['team'] == game['hometeam']:
+                hscore += self.score_increase(row['note'])
+            if row['team'] == game['awayteam']:
+                ascore += self.score_increase(row['note'])
+            homescore.append(hscore)
+            awayscore.append(ascore)
+        df['homescore'] = homescore
+        df['awayscore'] = awayscore
 
         return df
-
-
