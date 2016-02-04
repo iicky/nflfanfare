@@ -184,7 +184,7 @@ class Twitter:
 
         return start, end
 
-    def mobile_url(self, search, start, end, live=True):
+    def search_url(self, search, start, end, live=True):
         ''' Returns mobile Twitter search URL
         '''
         mod = '' if not live else 'f=tweets&'
@@ -209,7 +209,7 @@ class Twitter:
 
         start, end = self.start_end_times(start, end)
 
-        url = self.mobile_url(search, start, end, live)
+        url = self.search_url(search, start, end, live)
 
         try:
             # Open url in browser
@@ -279,7 +279,7 @@ class Twitter:
 
         start, end = self.start_end_times(start, end)
 
-        url = self.mobile_url(search, start, end, live)
+        url = self.search_url(search, start, end, live)
 
         try:
             # Open url in browser
@@ -416,7 +416,7 @@ class Twitter:
 
         start, end = self.start_end_times(start, end)
 
-        url = self.mobile_url(search, start, end, live)
+        url = self.search_url(search, start, end, live)
         print "Bulk scraping for %s... %s" % (urllib2.unquote(search), url)
 
         soup = self.bulk_source(url)
