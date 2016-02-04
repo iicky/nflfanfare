@@ -60,6 +60,14 @@ class Team:
         except:
             return None
 
+    def teamid_from_username(self, username):
+        ''' Returns the teamid for a username
+        '''
+        try:
+            return ff.db.teams.find_one({'username': username})['teamid']
+        except:
+            return None
+
     def pfrid_from_teamid(self, teamid):
         ''' Returns the PFR ID from team id
         '''
