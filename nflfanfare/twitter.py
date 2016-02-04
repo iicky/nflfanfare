@@ -198,6 +198,16 @@ class Twitter:
 
         return url
 
+    def timeline_url(self, username, start, end):
+        ''' Returns mobile Twitter user timeline URL
+        '''
+        url = 'https://mobile.twitter.com/search'
+        url += '?q=lang%3Aen%20from%s%20' % username
+        url += 'since%%3A%s%%20' % start
+        url += 'until%%3A%s&src=typd' % end    
+        
+        return url
+
     def search_historic(self, search, start, end, live=True, verbose=False):
         ''' Finds historic tweets and adds them to the database
         '''
