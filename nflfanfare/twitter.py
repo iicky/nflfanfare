@@ -453,6 +453,40 @@ class Twitter:
                         print "Error:", sys.exc_info()
                     pass
 
+    def bulk_timeline_historic(self, username, start, end, verbose=False):
+        ''' Scrapes team timeline tweets in bulk and adds them to the database
+        '''
+        # Get NFL teamid from hashtag
+        team = ff.team.teamid_from_username(username)
+
+        # Clean up inputs
+        username = urllib2.quote(username, safe='')
+
+        start, end = self.start_end_times(start, end)
+
+        url = self.search_url(search, start, end, live)
+        print "Bulk scraping for %s... %s" % (urllib2.unquote(username), url)
+
+        soup = self.bulk_source(url)
+        cells = soup.find_all('div', {'role': 'gridcell'})
+        for cell in cells:
+            info = self.bulk_cell_to_dict(cell)
+            if not info == None:
+                if self.in_db(info['tweetid']):
+                    if verbose:
+                        print "Tweet %s has already been collected" % info['tweetid']
+                    continue
+                try:
+                    tweet = ff.tweet.Bulk(info)
+                    if not tweet.retweeted:
+                        self.add_to_db(tweet, team, verbose=verbose, col='teamtweets')
+                except:
+                    if verbose == True:
+                        print "Could not collect tweet %s." % (info['tweetid'])
+                        print "Error:", sys.exc_info()
+                    pass
+
+
     def search_recent(self, search, start, end, verbose=False):
         ''' Pages through search API for tweets under 7 days old
         '''
