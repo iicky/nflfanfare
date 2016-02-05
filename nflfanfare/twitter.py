@@ -153,7 +153,8 @@ class Twitter:
                     print "%s/%s - Adding %s: %s to database." % (outtweet['gameid'], teamid, tweet.username, tweet.tweettext)
                 result = ff.db.tweets.insert_one(outtweet)
                 if result.acknowledged == True:
-                    update = self.update_tweet_counts(outtweet['gameid'], outtweet['teamid'])
+                    update = self.update_tweet_counts(
+                        outtweet['gameid'], outtweet['teamid'])
             else:
                 if verbose == True:
                     print "Tweet %s is already in the database." % tweet.tweetid
@@ -204,8 +205,8 @@ class Twitter:
         url = 'https://mobile.twitter.com/search'
         url += '?q=lang%3Aen%20from%s%20' % username
         url += 'since%%3A%s%%20' % start
-        url += 'until%%3A%s&src=typd' % end    
-        
+        url += 'until%%3A%s&src=typd' % end
+
         return url
 
     def search_historic(self, search, start, end, live=True, verbose=False):
@@ -517,23 +518,23 @@ class Twitter:
         try:
             if teamid == result['hometeam']:
                 update = ff.db.games.update_one(
-                        {"gameid": gameid},
-                        {
-                            "$set": {
-                                'tweetcounts.hometeam': result['tweetcounts']['hometeam']+1,
-                                'tweetcounts.total': result['tweetcounts']['total']+1,
-                            }
+                    {"gameid": gameid},
+                    {
+                        "$set": {
+                            'tweetcounts.hometeam': result['tweetcounts']['hometeam'] + 1,
+                            'tweetcounts.total': result['tweetcounts']['total'] + 1,
                         }
-                )   
+                    }
+                )
             elif teamid == result['awayteam']:
                 update = ff.db.games.update_one(
-                        {"gameid": gameid},
-                        {
-                            "$set": {
-                                'tweetcounts.awayteam': result['tweetcounts']['awayteam']+1,
-                                'tweetcounts.total': result['tweetcounts']['total']+1,
-                            }
+                    {"gameid": gameid},
+                    {
+                        "$set": {
+                            'tweetcounts.awayteam': result['tweetcounts']['awayteam'] + 1,
+                            'tweetcounts.total': result['tweetcounts']['total'] + 1,
                         }
-                )       
+                    }
+                )
         except:
-            print "Could not update tweet counts for %s." % gameid   
+            print "Could not update tweet counts for %s." % gameid

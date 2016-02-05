@@ -64,3 +64,17 @@ app/static/js/.DS_Store
 app/.DS_Store
 
 .DS_Store
+
+SQL/dump/NFL/games.bson
+
+SQL/dump/NFL/tweets.metadata.json
+
+SQL/dump/NFL/tweets.bson
+
+SQL/dump/NFL/teams.metadata.json
+
+SQL/dump/NFL/teams.bson
+
+SQL/dump/NFL/system.indexes.bson
+
+SQL/dump/NFL/games.metadata.json
