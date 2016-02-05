@@ -16,3 +16,4 @@ class DB:
         self.teams = self.db.teams
         self.games = self.db.games
         self.tweets = self.db.tweets
+        self.teamtweets = self.db.teamtweets
