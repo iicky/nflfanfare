@@ -119,7 +119,7 @@ class Twitter:
         else:
             return False
 
-    def add_to_db(self, tweet, teamid, verbose=False):
+    def add_to_db(self, tweet, teamid, verbose=False, col='tweets'):
         ''' Adds a tweet object to the database
         '''
         outtweet = {'tweetid': tweet.tweetid,
@@ -151,10 +151,14 @@ class Twitter:
             if not self.in_db(tweet.tweetid):
                 if verbose == True:
                     print "%s/%s - Adding %s: %s to database." % (outtweet['gameid'], teamid, tweet.username, tweet.tweettext)
-                result = ff.db.tweets.insert_one(outtweet)
-                if result.acknowledged == True:
-                    update = self.update_tweet_counts(
-                        outtweet['gameid'], outtweet['teamid'])
+
+                if col == 'tweets':
+                    result = ff.db.tweets.insert_one(outtweet)
+                    if result.acknowledged == True:
+                        update = self.update_tweet_counts(
+                            outtweet['gameid'], outtweet['teamid'])
+                elif col == 'teamtweets':
+                    result = ff.db.teamtweets.insert_one(outtweet)
             else:
                 if verbose == True:
                     print "Tweet %s is already in the database." % tweet.tweetid
