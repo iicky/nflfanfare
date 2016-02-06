@@ -86,3 +86,17 @@ class Collector:
 
         for hashtag in hashtags:
             ff.twitter.search_recent(hashtag, pre, post, verbose=verbose)
+
+    def collect_timeline_historic(self, gameid, verbose=False, method='api'):
+        ''' Collects historic tweets for a team timeline
+        '''
+        info = ff.sched.game_info(gameid)
+        pre, post = ff.sched.pre_post_times(info['starttime'])
+
+        homeusername = ff.db.teams.find_one({ 'teamid': info['hometeam'] })['username']
+        awayusername = ff.db.teams.find_one({ 'teamid': info['awayteam'] })['username']
+        usernames = [homeusername, awayusername]
+
+        for username in usernames:
+            if method == 'bulk':
+                ff.twitter.bulk_timeline_historic(username, pre, post, verbose=verbose)

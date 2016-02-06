@@ -207,7 +207,7 @@ class Twitter:
         ''' Returns mobile Twitter user timeline URL
         '''
         url = 'https://mobile.twitter.com/search'
-        url += '?q=lang%3Aen%20from%s%20' % username
+        url += '?q=lang%%3Aen%%20from%%3A%s%%20' % username
         url += 'since%%3A%s%%20' % start
         url += 'until%%3A%s&src=typd' % end
 
@@ -464,7 +464,7 @@ class Twitter:
 
         start, end = self.start_end_times(start, end)
 
-        url = self.search_url(search, start, end, live)
+        url = self.timeline_url(username, start, end)
         print "Bulk scraping for %s... %s" % (urllib2.unquote(username), url)
 
         soup = self.bulk_source(url)
@@ -485,7 +485,6 @@ class Twitter:
                         print "Could not collect tweet %s." % (info['tweetid'])
                         print "Error:", sys.exc_info()
                     pass
-
 
     def search_recent(self, search, start, end, verbose=False):
         ''' Pages through search API for tweets under 7 days old
