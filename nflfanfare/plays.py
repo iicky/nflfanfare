@@ -328,19 +328,19 @@ class Plays:
                     '_id': 0,
                     'total': {'$size': '$plays'},
                 }
-                }]))[0]
+                }]))
 
             done = list(ff.db.games.aggregate([
                 {'$match': {'gameid': gameid}},
                 {'$unwind': '$plays'},
                 {'$match': {'plays.filmstart': {'$exists': 'true'}}},
                 {'$group': {'_id': 'null', 'count': {'$sum': 1}}}
-            ]))[0]
+            ]))
 
             if not list(done) == []:
-                return total['total'] - done['count']
+                return total[0]['total'] - done[0]['count']
             else:
-                return total
+                return total[0]['total']
 
         except:
             print "Could not get film info counts for game %s" % gameid
