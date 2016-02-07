@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 import numpy as np
 import os
 import pandas as pd
@@ -7,8 +7,10 @@ import nflvid
 import urllib2
 import pytz
 import time
+import warnings
 
 import nflfanfare as ff
+
 
 class Plays:
     ''' Plays class
@@ -85,22 +87,22 @@ class Plays:
     def nflgame_plays(self, gameid):
         ''' Returns dataframe of plays from nflgame
         '''
-        game = ff.db.games.find_one({'gameid':gameid})
+        game = ff.db.games.find_one({'gameid': gameid})
         info = nflgame.game.Game(game['eid'])
         drives = info.data['drives']
-        
+
         events = {'playid': [],
-                 'quarter': [],
-                 'gameclock': [],
-                 'team': [],
-                 'drive': [],
-                 'down': [],
-                 'ydstogo': [],
-                 'ydline': [],
-                 'note': [],
-                 'description': []
-                 }
-        
+                  'quarter': [],
+                  'gameclock': [],
+                  'team': [],
+                  'drive': [],
+                  'down': [],
+                  'ydstogo': [],
+                  'ydline': [],
+                  'note': [],
+                  'description': []
+                  }
+
         for d in drives:
             if not d == 'crntdrv':
                 plays = drives[d]['plays']
@@ -118,17 +120,20 @@ class Plays:
                         events['description'].append(plays[p]['desc'])
                         events['quarter'].append(plays[p]['qtr'])
                         events['gameclock'].append(plays[p]['time'])
-                    
+
         df = pd.DataFrame(events)
-        
+
         # Jacksonville fixes
         df['team'] = df.team.apply(lambda x: 'JAX' if x == 'JAC' else x)
-        df['description'] = df.description.apply(lambda x: x.replace('JAC', 'JAX') if 'JAC' in x else x)
-        df['ydline'] = df.ydline.apply(lambda x: x.replace('JAC', 'JAX') if 'JAC' in x else x)
-        
+        df['description'] = df.description.apply(
+            lambda x: x.replace('JAC', 'JAX') if 'JAC' in x else x)
+        df['ydline'] = df.ydline.apply(
+            lambda x: x.replace('JAC', 'JAX') if 'JAC' in x else x)
+
         # Change playid to integer and sort
         df['playid'] = df.playid.astype(int)
-        df = df.sort_values(by=['drive', 'quarter', 'gameclock', 'playid'], ascending=[True, True, False, True])
+        df = df.sort_values(by=['drive', 'quarter', 'gameclock', 'playid'], ascending=[
+                            True, True, False, True])
 
         # Calculate current score for each play
         homescore = []
@@ -144,7 +149,7 @@ class Plays:
             awayscore.append(ascore)
         df['homescore'] = homescore
         df['awayscore'] = awayscore
-        
+
         return df
 
     def score_increase(self, note):
@@ -198,12 +203,13 @@ class Plays:
     def neulion_url(self, game, play, start):
         ''' Returns NeuLion video url
         '''
-        month = '0'+str(start.month) if start.month < 10 else start.month
-        day = '0'+str(start.day) if start.day < 10 else start.day
+        month = '0' + str(start.month) if start.month < 10 else start.month
+        day = '0' + str(start.day) if start.day < 10 else start.day
 
         url = 'http://smb.cdnllnwnl.neulion.com/u/nfl/nfl/coachtapes/'
         url += '%s/%s/%s/' % (start.year, month, day)
-        url += '%s_%s/pc/%s_%s_1600.mp4' % (game['gameid'], play, game['gameid'], play)
+        url += '%s_%s/pc/%s_%s_1600.mp4' % (
+            game['gameid'], play, game['gameid'], play)
 
         return url
 
@@ -215,8 +221,8 @@ class Plays:
 
     def download_plays(self, gameid, verbose=False):
         ''' Downloads all video plays for a gameid
-        ''' 
-        game = ff.db.games.find_one({'gameid':gameid})
+        '''
+        game = ff.db.games.find_one({'gameid': gameid})
         info = nflgame.game.Game(game['eid'])
         df = self.nflgame_plays(gameid)
         start = self.to_eastern(game['starttime'])
@@ -224,7 +230,15 @@ class Plays:
         for play in df.playid:
             url = self.neulion_url(game, play, start)
             path = self.download_path(game, play)
-            self.download_video(url, path, verbose)
+
+            if not self.has_film_info(gameid, play):
+                self.download_video(url, path, verbose=verbose)
+                self.add_film_info(gameid, play, verbose=verbose)
+                if os.path.exists(path):
+                    os.remove(path)
+            else:
+                if verbose:
+                    print "Film info for game %s play %s is already collected." % (gameid, play)
 
     def add_plays(self, gameid):
         ''' Add plays for gameid to the database
@@ -233,11 +247,68 @@ class Plays:
 
         try:
             update = ff.db.games.update_one(
-                                    {'gameid': gameid},
-                                    {'$set': {
-                                        'plays': df.to_dict(orient='records')
-                                    }
-                                })
+                {'gameid': gameid},
+                {'$set': {
+                    'plays': df.to_dict(orient='records')
+                }
+                })
         except:
             print "Could not add plays for %s to database." % gameid
 
+    def add_film_info(self, gameid, playid, verbose=False):
+        ''' Adds film information for play into database
+        '''
+        warnings.filterwarnings("ignore")
+        game = ff.db.games.find_one({'gameid': gameid})
+        info = nflgame.game.Game(game['eid'])
+        start = self.to_eastern(game['starttime'])
+
+        try:
+            play = nflvid.play(info, str(playid))
+
+            if not play == None:
+                filmurl = self.neulion_url(game, playid, start)
+
+                filmstart = timedelta(hours=play.start.hh,
+                                      minutes=play.start.mm,
+                                      seconds=play.start.ss)
+
+                if hasattr(play.end, 'ss'):
+                    filmend = timedelta(hours=play.end.hh,
+                                        minutes=play.end.mm,
+                                        seconds=play.end.ss)
+                    filmlength = filmend - filmstart
+                else:
+                    filmend = None
+                    filmlength = None
+            else:
+                filmurl, filmstart, filmend, filmlength = None, None, None, None
+
+            ff.db.games.update_one({'gameid': gameid,
+                                    'plays.playid': playid},
+                                   {'$set': {
+                                       'plays.$.filmurl': filmurl,
+                                       'plays.$.filmstart': None if filmstart == None else str(filmstart),
+                                       'plays.$.filmend': None if filmend == None else str(filmend),
+                                       'plays.$.filmlength': None if filmlength == None else str(filmlength)
+                                   }
+            })
+            if verbose:
+                print "Added film info for game %s play %s to database." % (gameid, playid)
+
+        except:
+            print "Could not add film info for game %s play %s" % (gameid, playid)
+
+    def has_film_info(self, gameid, playid):
+        ''' Returns true if play has film info
+        '''
+        result = ff.db.games.find_one({'gameid': gameid,
+                                       'plays': {
+                                           '$elemMatch': {
+                                               'playid': playid,
+                                               'filmstart': {'$exists': 'true'}
+                                           }}
+                                       })
+        if not result == None:
+            return True
+        return False
