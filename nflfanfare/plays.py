@@ -322,25 +322,26 @@ class Plays:
         ''' Returns the number of play film info missing from a gameid
         '''
         try:
-            total = ff.db.games.aggregate([
+            total = list(ff.db.games.aggregate([
                 {'$match': {'gameid': gameid}},
                 {'$project': {
                     '_id': 0,
                     'total': {'$size': '$plays'},
                 }
-                }])
+                }]))[0]
 
-            done = ff.db.games.aggregate([
+            done = list(ff.db.games.aggregate([
                 {'$match': {'gameid': gameid}},
                 {'$unwind': '$plays'},
                 {'$match': {'plays.filmstart': {'$exists': 'true'}}},
                 {'$group': {'_id': 'null', 'count': {'$sum': 1}}}
-            ])
+            ]))[0]
+
             if not list(done) == []:
-                return list(total)[0]['total'] - list(done)[0]['count']
+                return total['total'] - done['count']
             else:
-                return list(total)[0]['total']
+                return total
 
         except:
             print "Could not get film info counts for game %s" % gameid
-            return None
+        return None
