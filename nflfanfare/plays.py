@@ -234,11 +234,16 @@ class Plays:
             if not self.has_film_info(gameid, play):
                 self.download_video(url, path, verbose=verbose)
                 self.add_film_info(gameid, play, verbose=verbose)
-                if os.path.exists(path):
-                    os.remove(path)
             else:
                 if verbose:
                     print "Film info for game %s play %s is already collected." % (gameid, play)
+            if os.path.exists(path):
+                os.remove(path)
+
+        directory = '/'.join(path.split('/')[0:-1])
+        if os.path.exists(directory):
+            if not os.listdir(directory):
+                os.rmdir(directory)
 
     def add_plays(self, gameid):
         ''' Add plays for gameid to the database
