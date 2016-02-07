@@ -323,20 +323,19 @@ class Plays:
         '''
         try:
             total = ff.db.games.aggregate([
-                    {'$match': {'gameid': gameid} },
-                    {'$project': {
-                            '_id': 0,
-                            'total': { '$size': '$plays' },
-                        }
-                    }])
-
+                {'$match': {'gameid': gameid}},
+                {'$project': {
+                    '_id': 0,
+                    'total': {'$size': '$plays'},
+                }
+                }])
 
             done = ff.db.games.aggregate([
-                    {'$match': {'gameid': gameid} },
-                    {'$unwind': '$plays' },
-                    {'$match':{'plays.filmstart': {'$exists': 'true'} } },
-                    {'$group':{'_id': 'null', 'count': {'$sum': 1 } } }
-                ])
+                {'$match': {'gameid': gameid}},
+                {'$unwind': '$plays'},
+                {'$match': {'plays.filmstart': {'$exists': 'true'}}},
+                {'$group': {'_id': 'null', 'count': {'$sum': 1}}}
+            ])
             if not list(done) == []:
                 return list(total)[0]['total'] - list(done)[0]['count']
             else:
