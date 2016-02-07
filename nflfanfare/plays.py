@@ -317,3 +317,28 @@ class Plays:
         if not result == None:
             return True
         return False
+
+    def film_info_togo(self, gameid):
+        ''' Returns the number of play film info missing from a gameid
+        '''
+        try:
+            total = ff.db.games.aggregate([
+                       {'$match': {'gameid': '56706'} },
+                       {'$project': {
+                            '_id': 0,
+                            'total': { '$size': '$plays' },
+                       }
+                    }])
+
+
+            done = ff.db.games.aggregate([
+                        {'$match': {'gameid': '56706'} },
+                        {'$unwind': '$plays' },
+                        {'$match':{'plays.filmstart': {'$exists': 'true'} } },
+                        {'$group':{'_id': 'null', 'count': {'$sum': 1 } } }
+                    ])
+            return total - done
+
+        except:
+            print "Could not get film info counts for game %s" % gameid
+            return None
