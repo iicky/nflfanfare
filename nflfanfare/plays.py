@@ -227,9 +227,10 @@ class Plays:
         df = self.nflgame_plays(gameid)
         start = self.to_eastern(game['starttime'])
 
-        for play in df.playid:
+        if self.film_info_togo(gameid) > 0 and not gameid == "56834":
 
-            if self.film_info_togo(gameid) > 0:
+            for play in df.playid:
+
                 url = self.neulion_url(game, play, start)
                 path = self.download_path(game, play)
 
