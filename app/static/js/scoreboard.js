@@ -26,13 +26,13 @@ function initScoreboard(d){
 
     // Scoreboard
     var board = d3.select("#scoreboardcontainer")
-                  .append("svg")
-                  .attr("id", "scoreboard")
-                  .attr("width", width + margin.left + margin.right)
-                  .attr("height", height + margin.top + margin.bottom)
-                  .append("g")
-                  .attr("transform", 
-                        "translate(" + margin.left + "," + margin.top + ")");
+        .append("svg")
+        .attr("id", "scoreboard")
+        .attr("width", width + margin.left + margin.right)
+        .attr("height", height + margin.top + margin.bottom)
+        .append("g")
+        .attr("transform", 
+              "translate(" + margin.left + "," + margin.top + ")");
 
     //------------------------------------------
     // Team possession defintions
@@ -43,27 +43,27 @@ function initScoreboard(d){
 
     // Home team possession
     var homeposs = board.append("g")
-                        .attr("id", "boardhomepossgroup")
-                        .attr("transform",
-                              "translate(" + homepossx + "," + possy + ")")
-                        .append("ellipse")
-                        .attr("id", "boardhomeposs")
-                        .attr("class", "boardpossession")
-                        .attr("rx", possradx)
-                        .attr("ry", possrady)
-                        .attr("cx", 0).attr("cy", 0);
+        .attr("id", "boardhomepossgroup")
+        .attr("transform",
+              "translate(" + homepossx + "," + possy + ")")
+        .append("ellipse")
+        .attr("id", "boardhomeposs")
+        .attr("class", "boardpossession")
+        .attr("rx", possradx)
+        .attr("ry", possrady)
+        .attr("cx", 0).attr("cy", 0);
 
     // Away team possession
     var awayposs = board.append("g")
-                        .attr("id", "boardhomepossgroup")
-                        .attr("transform",
-                            "translate(" + awaypossx + "," + possy + ")")
-                        .append("ellipse")
-                        .attr("id", "boardawayposs")
-                        .attr("class", "boardpossession")
-                        .attr("rx", possradx)
-                        .attr("ry", possrady)
-                        .attr("cx", 0).attr("cy", 0);
+        .attr("id", "boardhomepossgroup")
+        .attr("transform",
+              "translate(" + awaypossx + "," + possy + ")")
+        .append("ellipse")
+        .attr("id", "boardawayposs")
+        .attr("class", "boardpossession")
+        .attr("rx", possradx)
+        .attr("ry", possrady)
+        .attr("cx", 0).attr("cy", 0);
 
     //------------------------------------------
     // Team ID defintions
@@ -74,16 +74,16 @@ function initScoreboard(d){
 
     // Home team ID
     var hometeamid = board.append("g")
-                          .attr("id", "boardhometeamidgroup")
-                          .attr("transform",
-                                "translate(" + hometeamidx + "," + teamidy + ")")
+        .attr("id", "boardhometeamidgroup")
+        .attr("transform",
+              "translate(" + hometeamidx + "," + teamidy + ")")
 
     hometeamid.append("rect")
-                .attr("id", "boardhometeamid")
-                .attr("class", "boardrect")
-                .attr("height", teamidheight)
-                .attr("width", teamidwidth)
-                .attr("x", 0).attr("y", 0);
+              .attr("id", "boardhometeamid")
+              .attr("class", "boardrect")
+              .attr("height", teamidheight)
+              .attr("width", teamidwidth)
+              .attr("x", 0).attr("y", 0);
 
     hometeamid.append("text")
               .text(data.hometeam)
@@ -92,9 +92,9 @@ function initScoreboard(d){
 
     // Away team ID
     var awayteamid = board.append("g")
-                          .attr("id", "boardawayteamidgroup")
-                          .attr("transform",
-                                "translate(" + awayteamidx + "," + teamidy + ")")
+        .attr("id", "boardawayteamidgroup")
+        .attr("transform",
+              "translate(" + awayteamidx + "," + teamidy + ")")
 
     awayteamid.append("rect")
               .attr("id", "boardawayteamid")
@@ -117,30 +117,30 @@ function initScoreboard(d){
     var timeouty = teamidy + timeoutrad + teamidheight + margin.left*2;
 
     var hometimeout = board.append("g")
-                          .attr("id", "boardhometimeoutgroup")
-                          .attr("transform",
-                              "translate(" + hometimeoutx + "," + timeouty + ")")
-                          .selectAll("circle")
-                          .data(circledata).enter()
-                          .append("circle")
-                          .attr("id", function(d){ return "boardhometimeout" + d; })
-                          .attr("class", "boardtimeout")
-                          .attr("r", timeoutrad)
-                          .attr("cx", function(d, i){ return ((teamidwidth/3)/2 + (teamidwidth/3)*i) - timeoutrad; })
-                          .attr("cy", 0);
+        .attr("id", "boardhometimeoutgroup")
+        .attr("transform",
+              "translate(" + hometimeoutx + "," + timeouty + ")")
+        .selectAll("circle")
+        .data(circledata).enter()
+        .append("circle")
+        .attr("id", function(d){ return "boardhometimeout" + d; })
+        .attr("class", "boardtimeout")
+        .attr("r", timeoutrad)
+        .attr("cx", function(d, i){ return ((teamidwidth/3)/2 + (teamidwidth/3)*i) - timeoutrad; })
+        .attr("cy", 0);
 
     var awaytimeout = board.append("g")
-                          .attr("id", "boardawaytimeoutgroup")
-                          .attr("transform",
-                                "translate(" + awaytimeoutx + "," + timeouty + ")")
-                          .selectAll("circle")
-                          .data(circledata).enter()
-                          .append("circle")
-                          .attr("id", function(d){ return "boardawaytimeout" + d; })
-                          .attr("class", "boardtimeout")
-                          .attr("r", timeoutrad)
-                          .attr("cx", function(d, i){ return ((teamidwidth/3)/2 + (teamidwidth/3)*i) - timeoutrad; })
-                          .attr("cy", 0);
+        .attr("id", "boardawaytimeoutgroup")
+        .attr("transform",
+              "translate(" + awaytimeoutx + "," + timeouty + ")")
+        .selectAll("circle")
+        .data(circledata).enter()
+        .append("circle")
+        .attr("id", function(d){ return "boardawaytimeout" + d; })
+        .attr("class", "boardtimeout")
+        .attr("r", timeoutrad)
+        .attr("cx", function(d, i){ return ((teamidwidth/3)/2 + (teamidwidth/3)*i) - timeoutrad; })
+        .attr("cy", 0);
 
     //------------------------------------------
     // Team logo definitions
@@ -150,27 +150,27 @@ function initScoreboard(d){
 
     // Home logo
     var homelogo = board.append("g")
-                        .attr("id", "boardhomelogogroup")
-                        .attr("transform",
-                              "translate(" + homelogox + ", 0)")
-                        .append("image")
-                        .attr("id", "boardhomelogo")
-                        .attr("height", logoheight)
-                        .attr("width", logowidth)
-                        .attr("xlink:href", "/static/images/logos/" + d.hometeam + ".png")
-                        .attr("x", 0).attr("y", 0);
+        .attr("id", "boardhomelogogroup")
+        .attr("transform",
+              "translate(" + homelogox + ", 0)")
+        .append("image")
+        .attr("id", "boardhomelogo")
+        .attr("height", logoheight)
+        .attr("width", logowidth)
+        .attr("xlink:href", "/static/images/logos/" + d.hometeam + ".png")
+        .attr("x", 0).attr("y", 0);
 
     // Away logo
     var awaylogo = board.append("g")
-                        .attr("id", "boardawaylogogroup")
-                        .attr("transform",
-                              "translate(" + awaylogox + ", 0)")
-                        .append("image")
-                        .attr("id", "boardawaylogo")
-                        .attr("height", logoheight)
-                        .attr("width", logowidth)
-                        .attr("xlink:href", "/static/images/logos/" + d.awayteam + ".png")
-                        .attr("x", 0).attr("y", 0);
+        .attr("id", "boardawaylogogroup")
+        .attr("transform",
+              "translate(" + awaylogox + ", 0)")
+        .append("image")
+        .attr("id", "boardawaylogo")
+        .attr("height", logoheight)
+        .attr("width", logowidth)
+        .attr("xlink:href", "/static/images/logos/" + d.awayteam + ".png")
+        .attr("x", 0).attr("y", 0);
 
     //------------------------------------------
     // Team score definitions
@@ -181,9 +181,9 @@ function initScoreboard(d){
 
     // Home score
     var homescore = board.append("g")
-                         .attr("id", "boardhomescoregroup")
-                         .attr("transform",
-                               "translate(" + homescorex + ", 0)");
+        .attr("id", "boardhomescoregroup")
+        .attr("transform",
+              "translate(" + homescorex + ", 0)");
 
     homescore.append("rect")
              .attr("id", "boardhomescore")
@@ -193,15 +193,15 @@ function initScoreboard(d){
              .attr("x", 0).attr("y", 0);
 
     homescore.append("text")
-              .text(lastplay.homescore)
-              .attr("class", "boardscoretext")
-              .attr("x", scorewidth/2).attr("y", scoreheight/2);
+             .text(lastplay.homescore)
+             .attr("class", "boardscoretext")
+             .attr("x", scorewidth/2).attr("y", scoreheight/2);
 
     // Away score
     var awayscore = board.append("g")
-                         .attr("id", "boardawayscoregroup")
-                         .attr("transform",
-                               "translate(" + awayscorex + ", 0)");
+        .attr("id", "boardawayscoregroup")
+        .attr("transform",
+              "translate(" + awayscorex + ", 0)");
 
     awayscore.append("rect")
              .attr("id", "boardawayscore")
@@ -211,9 +211,9 @@ function initScoreboard(d){
              .attr("x", 0).attr("y", 0);
 
     awayscore.append("text")
-              .text(lastplay.awayscore)
-              .attr("class", "boardscoretext")
-              .attr("x", scorewidth/2).attr("y", scoreheight/2);
+             .text(lastplay.awayscore)
+             .attr("class", "boardscoretext")
+             .attr("x", scorewidth/2).attr("y", scoreheight/2);
 
     //------------------------------------------
     // Team score definitions
@@ -226,9 +226,9 @@ function initScoreboard(d){
 
     // Quarter information
     var quarter = board.append("g")
-                       .attr("id", "boardquartergroup")
-                       .attr("transform",
-                             "translate(" + timex + ", 0)");
+        .attr("id", "boardquartergroup")
+        .attr("transform",
+              "translate(" + timex + ", 0)");
 
     quarter.append("rect")
            .attr("id", "boardquarter")
@@ -244,9 +244,9 @@ function initScoreboard(d){
 
     // Time information
     var time = board.append("g")
-                    .attr("id", "boardtimegroup")
-                    .attr("transform",
-                          "translate(" + timex + "," + timey + ")");
+        .attr("id", "boardtimegroup")
+        .attr("transform",
+              "translate(" + timex + "," + timey + ")");
 
     time.append("rect")
         .attr("id", "boardtime")
@@ -270,9 +270,9 @@ function initScoreboard(d){
 
     // Time information
     var play = board.append("g")
-                    .attr("id", "boardplaygroup")
-                    .attr("transform",
-                          "translate(" + playx + "," + playy + ")");
+        .attr("id", "boardplaygroup")
+        .attr("transform",
+              "translate(" + playx + "," + playy + ")");
 
     play.append("rect")
         .attr("id", "boardtime")
