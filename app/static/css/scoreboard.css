@@ -1,6 +1,6 @@
 @font-face {
     font-family: 'FontAwesome';
-    src: url('static/fonts/fontawesome-webfont.woff');
+    src: url('../fonts/fontawesome-webfont.woff');
     font-weight: normal;
     font-style: normal;
 }
