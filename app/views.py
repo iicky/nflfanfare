@@ -25,17 +25,10 @@ def teaminfo():
     df = stats.teams_list()
     return df.to_json(orient='records')
 
-@app.route('/scoreboard', methods=['GET'])
-def scoreboard():
-    gameid = request.args.get('gameid')
-    return render_template('scoreboard.html',
-                            gameid=gameid)
-
 @app.route('/game', methods=['GET'])
 def game():
-    
     gameid = request.args.get('gameid')
-    return render_template("charttest.html",
+    return render_template('scoreboard.html',
                             gameid=gameid)
 
 @app.route('/gamesentiment', methods=['GET'])
