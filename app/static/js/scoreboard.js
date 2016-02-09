@@ -186,7 +186,6 @@ function initScoreboard(d){
               "translate(" + homescorex + ", 0)");
 
     homescore.append("rect")
-             .attr("id", "boardhomescore")
              .attr("class", "boardrect")
              .attr("height", scoreheight)
              .attr("width", scoreheight)
@@ -194,6 +193,7 @@ function initScoreboard(d){
 
     homescore.append("text")
              .text(lastplay.homescore)
+             .attr("id", "boardhomescore")
              .attr("class", "boardscoretext")
              .attr("x", scorewidth/2).attr("y", scoreheight/2);
 
@@ -204,7 +204,6 @@ function initScoreboard(d){
               "translate(" + awayscorex + ", 0)");
 
     awayscore.append("rect")
-             .attr("id", "boardawayscore")
              .attr("class", "boardrect")
              .attr("height", scoreheight)
              .attr("width", scoreheight)
@@ -212,6 +211,7 @@ function initScoreboard(d){
 
     awayscore.append("text")
              .text(lastplay.awayscore)
+             .attr("id", "boardawayscore")
              .attr("class", "boardscoretext")
              .attr("x", scorewidth/2).attr("y", scoreheight/2);
 
@@ -249,7 +249,6 @@ function initScoreboard(d){
               "translate(" + timex + "," + timey + ")");
 
     time.append("rect")
-        .attr("id", "boardtime")
         .attr("class", "boardrect")
         .attr("height", timeheight)
         .attr("width", quarterwidth)
@@ -257,6 +256,7 @@ function initScoreboard(d){
 
     time.append("text")
         .text(parseDate(d.endtime.$date))
+        .attr("id", "boardtime")
         .attr("class", "boardtimetext")
         .attr("x", quarterwidth/2).attr("y", timeheight/2);
 
@@ -275,7 +275,6 @@ function initScoreboard(d){
               "translate(" + playx + "," + playy + ")");
 
     play.append("rect")
-        .attr("id", "boardtime")
         .attr("class", "boardrect")
         .attr("height", playheight)
         .attr("width", playwidth)
@@ -283,6 +282,7 @@ function initScoreboard(d){
 
     play.append("text")
         .text(prettyPlay(lastplay.description))
+        .attr("id", "boardplay")
         .attr("class", "boardplaytext")
         .attr("x", playwidth/2).attr("y", playheight/2);
 
