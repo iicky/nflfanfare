@@ -228,17 +228,19 @@ class Plays:
         start = self.to_eastern(game['starttime'])
 
         for play in df.playid:
-            url = self.neulion_url(game, play, start)
-            path = self.download_path(game, play)
 
-            if not self.has_film_info(gameid, play):
-                self.download_video(url, path, verbose=verbose)
-                self.add_film_info(gameid, play, verbose=verbose)
-            else:
-                if verbose:
-                    print "Film info for game %s play %s is already collected." % (gameid, play)
-            if os.path.exists(path):
-                os.remove(path)
+            if self.film_info_togo(gameid) > 0:
+                url = self.neulion_url(game, play, start)
+                path = self.download_path(game, play)
+
+                if not self.has_film_info(gameid, play):
+                    self.download_video(url, path, verbose=verbose)
+                    self.add_film_info(gameid, play, verbose=verbose)
+                else:
+                    if verbose:
+                        print "Film info for game %s play %s is already collected." % (gameid, play)
+                if os.path.exists(path):
+                    os.remove(path)
 
         directory = '/'.join(path.split('/')[0:-1])
         if os.path.exists(directory):
