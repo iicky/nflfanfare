@@ -125,32 +125,112 @@ function drawSentGraph(d){
     var boardawayscore = d3.select("#boardawayscore");
     var boardplay = d3.select("#boardplay");
 
-    var playitem = d3.bisector(function(d){ return d.predtime.$date }).left;
+    var playindex = d3.bisector(function(d){ return d.predtime.$date }).right;
 
-
+    // Mouse move function
     function mousemove() {
         var x0 = d3.mouse(this)[0];
         var senttime = x.invert(x0);
-        var playi = playitem(data.plays, Date.parse(senttime));
-        
+        var playi = playindex(data.plays, Date.parse(senttime));
+        playi = playitem(playi);
+
+        // Move focus line
+        focus.attr("transform",
+                   "translate(" + x0 + ",0)");        
+
+        // Board updates
         boardtime.text(parseDate(senttime));
         boardhomescore.text(data.plays[playi].homescore);
         boardawayscore.text(data.plays[playi].awayscore);
-        boardplay.text(data.plays[playi].description);
-
-
-        focus.attr("transform",
-                   "translate(" + x0 + ",0)");
-        /*
-        var x0 = x.invert(d3.mouse(this)[0]),
-            i = bisectDate(data, x0, 1),
-            d0 = data[i - 1],
-            d1 = data[i],
-            d = x0 - d0.date > d1.date - x0 ? d1 : d0;
-        focus.attr("transform", "translate(" + x(d.date) + "," + y(d.close) + ")");
-        focus.select("text").text(formatCurrency(d.close));
-        */
+        boardplay.text(prettyPlay(data.plays[playi].description));
+        possession(playi);
+        timeouts(playi);
     };
 
 };
 
+/**
+ *  Fixes playtime index for postgame
+ */
+function playitem(p) {
+    if (typeof data.plays[p] === 'undefined'){ 
+        return 0; 
+    }
+    else { return p; }
+};
+
+/**
+ *  Changes team possession
+ */
+function possession(p) {
+    var boardhomeposs = d3.select("#boardhomeposs");
+    var boardawayposs = d3.select("#boardawayposs");
+
+    if (data.plays[p].team == data.hometeam){
+        boardhomeposs.attr("class", "boardpossessionon");
+        boardawayposs.attr("class", "boardpossessionoff");
+    }
+    else if (data.plays[p].team == data.awayteam){
+        boardawayposs.attr("class", "boardpossessionon");
+        boardhomeposs.attr("class", "boardpossessionoff");
+    }
+    else {
+        boardawayposs.attr("class", "boardpossessionoff");
+        boardhomeposs.attr("class", "boardpossessionoff");
+    }
+};
+
+/**
+ *  Changes team timeouts
+ */
+function timeouts(p) {
+    var boardhometimeout1 = d3.select("#boardhometimeout1");
+    var boardhometimeout2 = d3.select("#boardhometimeout2");
+    var boardhometimeout3 = d3.select("#boardhometimeout3");
+
+    if (data.plays[p].hometimeouts == 3){
+        boardhometimeout1.attr("class", "boardtimeouton");
+        boardhometimeout2.attr("class", "boardtimeouton");
+        boardhometimeout3.attr("class", "boardtimeouton");
+    }
+    else if (data.plays[p].hometimeouts == 2){
+        boardhometimeout1.attr("class", "boardtimeouton");
+        boardhometimeout2.attr("class", "boardtimeouton");
+        boardhometimeout3.attr("class", "boardtimeoutoff");
+    }
+    else if (data.plays[p].hometimeouts == 1){
+        boardhometimeout1.attr("class", "boardtimeouton");
+        boardhometimeout2.attr("class", "boardtimeoutoff");
+        boardhometimeout3.attr("class", "boardtimeoutoff");
+    }
+    else if (data.plays[p].hometimeouts == 0){
+        boardhometimeout1.attr("class", "boardtimeoutoff");
+        boardhometimeout2.attr("class", "boardtimeoutoff");
+        boardhometimeout3.attr("class", "boardtimeoutoff");        
+    }
+
+    var boardawaytimeout1 = d3.select("#boardawaytimeout1");
+    var boardawaytimeout2 = d3.select("#boardawaytimeout2");
+    var boardawaytimeout3 = d3.select("#boardawaytimeout3");
+
+    if (data.plays[p].awaytimeouts == 3){
+        boardawaytimeout1.attr("class", "boardtimeouton");
+        boardawaytimeout2.attr("class", "boardtimeouton");
+        boardawaytimeout3.attr("class", "boardtimeouton");
+    }
+    else if (data.plays[p].awaytimeouts == 2){
+        boardawaytimeout1.attr("class", "boardtimeouton");
+        boardawaytimeout2.attr("class", "boardtimeouton");
+        boardawaytimeout3.attr("class", "boardtimeoutoff");
+    }
+    else if (data.plays[p].awaytimeouts == 1){
+        boardawaytimeout1.attr("class", "boardtimeouton");
+        boardawaytimeout2.attr("class", "boardtimeoutoff");
+        boardawaytimeout3.attr("class", "boardtimeoutoff");
+    }
+    else if (data.plays[p].awaytimeouts == 0){
+        boardawaytimeout1.attr("class", "boardtimeoutoff");
+        boardawaytimeout2.attr("class", "boardtimeoutoff");
+        boardawaytimeout3.attr("class", "boardtimeoutoff");        
+    }
+};

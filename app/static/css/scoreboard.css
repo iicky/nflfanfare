@@ -9,16 +9,28 @@
 	border: none;
 }
 
-.boardtimeout {
+.boardtimeouton {
 	fill: gold;
 	stroke-width: 1px;
 	stroke: black;
 }
 
-.boardpossession {
+.boardtimeoutoff {
+	fill: white;
+	stroke-width: 1px;
+	stroke: black;
+}
+
+.boardpossessionon {
 	fill: black;
 	stroke-width: 1px;
 	stroke: black;
+}
+
+.boardpossessionoff {
+	fill: none;
+	stroke-width: 1px;
+	stroke: none;
 }
 
 .boardrect {

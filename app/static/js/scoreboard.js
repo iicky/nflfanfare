@@ -10,7 +10,7 @@ function parseDate(stamp){
  *  Returns a nicely formatted play descripion
  */
 function prettyPlay(play){
-    return play;
+    return play.split('. ')[0];
 };
 
 /**
@@ -48,7 +48,7 @@ function initScoreboard(d){
               "translate(" + homepossx + "," + possy + ")")
         .append("ellipse")
         .attr("id", "boardhomeposs")
-        .attr("class", "boardpossession")
+        .attr("class", "boardpossessionoff")
         .attr("rx", possradx)
         .attr("ry", possrady)
         .attr("cx", 0).attr("cy", 0);
@@ -60,7 +60,7 @@ function initScoreboard(d){
               "translate(" + awaypossx + "," + possy + ")")
         .append("ellipse")
         .attr("id", "boardawayposs")
-        .attr("class", "boardpossession")
+        .attr("class", "boardpossessionoff")
         .attr("rx", possradx)
         .attr("ry", possrady)
         .attr("cx", 0).attr("cy", 0);
@@ -124,7 +124,7 @@ function initScoreboard(d){
         .data(circledata).enter()
         .append("circle")
         .attr("id", function(d){ return "boardhometimeout" + d; })
-        .attr("class", "boardtimeout")
+        .attr("class", "boardtimeouton")
         .attr("r", timeoutrad)
         .attr("cx", function(d, i){ return ((teamidwidth/3)/2 + (teamidwidth/3)*i) - timeoutrad; })
         .attr("cy", 0);
@@ -137,7 +137,7 @@ function initScoreboard(d){
         .data(circledata).enter()
         .append("circle")
         .attr("id", function(d){ return "boardawaytimeout" + d; })
-        .attr("class", "boardtimeout")
+        .attr("class", "boardtimeouton")
         .attr("r", timeoutrad)
         .attr("cx", function(d, i){ return ((teamidwidth/3)/2 + (teamidwidth/3)*i) - timeoutrad; })
         .attr("cy", 0);
