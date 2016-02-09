@@ -243,10 +243,10 @@ class Plays:
                 if os.path.exists(path):
                     os.remove(path)
 
-        directory = '/'.join(path.split('/')[0:-1])
-        if os.path.exists(directory):
-            if not os.listdir(directory):
-                os.rmdir(directory)
+            directory = '/'.join(path.split('/')[0:-1])
+            if os.path.exists(directory):
+                if not os.listdir(directory):
+                    os.rmdir(directory)
 
     def add_plays(self, gameid):
         ''' Add plays for gameid to the database
