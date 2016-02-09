@@ -1,0 +1,70 @@
+@font-face {
+    font-family: 'FontAwesome';
+    src: url('static/fonts/fontawesome-webfont.woff');
+    font-weight: normal;
+    font-style: normal;
+}
+
+#scoreboard {
+	border: none;
+}
+
+.boardtimeout {
+	fill: gold;
+	stroke-width: 1px;
+	stroke: black;
+}
+
+.boardpossession {
+	fill: black;
+	stroke-width: 1px;
+	stroke: black;
+}
+
+.boardrect {
+	fill: none;
+	stroke-width: 1px;
+	stroke: none;
+}
+
+.boardteamidtext {
+	fill: black;
+	font-size: 35px;
+	text-anchor: middle;
+	alignment-baseline: central;
+	font-family: "FontAwesome";
+}
+
+.boardscoretext {
+	fill: black;
+	font-size: 50px;
+	text-anchor: middle;
+	alignment-baseline: central;
+	font-family: "FontAwesome";
+}
+
+.boardquartertext {
+	fill: green;
+	font-size: 25px;
+	text-anchor: middle;
+	alignment-baseline: hanging;
+	font-family: "FontAwesome";
+}
+
+.boardtimetext {
+	fill: gray;
+	font-size: 10px;
+	text-anchor: middle;
+	alignment-baseline: top;
+	font-family: "FontAwesome";
+	font-weight: bold;
+}
+
+.boardplaytext {
+	fill: black;
+	font-size: 10px;
+	text-anchor: middle;
+	alignment-baseline: top;
+	font-family: "FontAwesome";
+	font-weight: bold;
+}

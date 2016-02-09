@@ -25,6 +25,12 @@ def teaminfo():
     df = stats.teams_list()
     return df.to_json(orient='records')
 
+@app.route('/scoreboard', methods=['GET'])
+def scoreboard():
+    gameid = request.args.get('gameid')
+    return render_template('scoreboard.html',
+                            gameid=gameid)
+
 @app.route('/game', methods=['GET'])
 def game():
     

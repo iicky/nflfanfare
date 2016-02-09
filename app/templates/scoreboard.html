@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+
+<html>
+<head>
+
+<title>NFLfanfare.net</title>
+
+<!-- Scoreboard style sheet -->
+<link href="static/css/scoreboard.css" rel="stylesheet" type="text/css">
+
+<style>
+
+@font-face {
+    font-family: 'FontAwesome';
+    src: url('static/fonts/fontawesome-webfont.woff');
+    font-weight: normal;
+    font-style: normal;
+}
+
+</style>
+
+
+</head>
+
+<body>
+
+<div id="scoreboardcontainer"></div>
+
+</body>
+
+<script charset="utf-8" src="http://d3js.org/d3.v3.min.js"></script>
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+<script src="static/js/moment.js"></script>
+<script src="static/js/scoreboard.js"></script>
+
+
+<script>
+
+var gameid = {{gameid}};
+var data;
+
+$.getJSON("gamesentiment?gameid="+gameid, function(d) {
+
+		data = d;
+		initScoreboard(d);
+
+});
+
+</script>
+
+
+</html>
