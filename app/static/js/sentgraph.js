@@ -24,13 +24,10 @@ function drawSentGraph(d){
     // Axis definitions
     var x = d3.time.scale().range([0, width]);
     var y = d3.scale.linear().range([height, 0]);
-    var p = d3.time.scale().range([0, width]);
-
 
     // Scale data
     x.domain(d3.extent(data.gametime, function(d) { return d.time.$date; }));
     y.domain([-1, 1]);
-    p.domain(d3.extent(data.plays, function(d) { return d.predtime.$date; }));
 
     var xAxis = d3.svg.axis().scale(x).ticks(0)
                   .orient("middle")
@@ -113,11 +110,52 @@ function drawSentGraph(d){
          .attr("x2", 0)
          .attr("y2", height);
 
-    focus.append("text")
-         .attr("x", 0)
-         .attr("y", 0)
-         .text("test")
+    var focuspad = 5;
+    var focuslogoheight = 30;
+    var focushomex = -1 * focuspad - focuslogoheight;
+    var focusawayx = focuspad;
 
+    // Home team focus definitions
+    var focushome = focus.append("g")
+        .append("g")
+        .attr("transform",
+              "translate(" + focushomex + ", 0)")
+
+    focushome.append("image")
+        .attr("id", "focushomelogo")
+        .attr("height", focuslogoheight)
+        .attr("width", focuslogoheight)
+        .attr("xlink:href", "/static/images/logos/" + d.hometeam + ".png")
+
+    focushome.append("text")
+             .attr("id", "focushomesent")
+             .attr("class", "focustext")
+             .attr("x", -1 * focuspad)
+             .attr("y", focuslogoheight/2)
+             .style("text-anchor", "end")
+             .text("NE")
+
+    // Away team focus definitions
+    var focusaway = focus.append("g")
+        .append("g")
+        .attr("transform",
+              "translate(" + focusawayx + ", 0)")
+
+    focusaway.append("image")
+        .attr("id", "focusawaylogo")
+        .attr("height", focuslogoheight)
+        .attr("width", focuslogoheight)
+        .attr("xlink:href", "/static/images/logos/" + d.awayteam + ".png")
+
+    focusaway.append("text")
+             .attr("id", "focusawaysent")
+             .attr("class", "focustext")
+             .attr("x", focuslogoheight + focuspad)
+             .attr("y", focuslogoheight/2)
+             .style("text-anchor", "start")
+             .text("PIT")
+
+    // Focus overlay
     svg.append("rect")
        .attr("class", "overlay")
        .attr("width", width)
@@ -132,12 +170,15 @@ function drawSentGraph(d){
     var boardplay = d3.select("#boardplay");
 
     var playindex = d3.bisector(function(d){ return d.predtime.$date }).right;
+    var sentindex = d3.bisector(function(d){ return d.time.$date }).right;
+
 
     // Mouse move function
     function mousemove() {
         var x0 = d3.mouse(this)[0];
         var senttime = x.invert(x0);
         var playi = playindex(data.plays, Date.parse(senttime));
+        var senti = sentindex(data.gametime, Date.parse(senttime));
         playi = playitem(playi);
 
         // Move focus line
