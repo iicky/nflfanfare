@@ -227,7 +227,7 @@ class Plays:
         df = self.nflgame_plays(gameid)
         start = self.to_eastern(game['starttime'])
 
-        if self.film_info_togo(gameid) > 0 and not gameid == "56834":
+        if self.film_info_togo(gameid) > 0:
 
             for play in df.playid:
 
