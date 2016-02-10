@@ -75,20 +75,26 @@ function drawSentGraph(d){
         .x(function(d) { return x(d.time.$date); })
         .y(function(d) { return y(d.awaysentiment); });
 
-    // Home team line
+    // Home team lines
     svg.append("path")
-       .attr("class", "line")
-       .attr("stroke", '#' + data.homecolor)
-       .attr("fill", "none")
-       .attr("stroke-width", "3px")
+       .attr("class", "boardteamlinepri")
+       .attr("stroke", '#' + data.homecolorpri)
+       .attr("d", homeline(data.gametime));
+
+    svg.append("path")
+       .attr("class", "boardteamlinesec")
+       .attr("stroke", '#' + data.homecolorsec)
        .attr("d", homeline(data.gametime));
 
     // Away team line
     svg.append("path")
-       .attr("class", "line")
-       .attr("stroke", '#' + data.awaycolor)
-       .attr("fill", "none")
-       .attr("stroke-width", "3px")
+       .attr("class", "boardteamlinepri")
+       .attr("stroke", '#' + data.awaycolorpri)
+       .attr("d", awayline(data.gametime));
+
+    svg.append("path")
+       .attr("class", "boardteamlinesec")
+       .attr("stroke", '#' + data.awaycolorsec)
        .attr("d", awayline(data.gametime));
 
     //------------------------------------------
@@ -145,6 +151,7 @@ function drawSentGraph(d){
         boardplay.text(prettyPlay(data.plays[playi].description));
         possession(playi);
         timeouts(playi);
+        quarter(playi);
     };
 
 };
@@ -179,6 +186,16 @@ function possession(p) {
         boardhomeposs.attr("class", "boardpossessionoff");
     }
 };
+
+/**
+ *  Changes board quarter
+ */
+function quarter(p) {
+    var boardquarter = d3.select("#boardquarter");
+    var q = "Q" + data.plays[p].quarter.toString();
+    var t = data.plays[p].gameclock;
+    boardquarter.text(q + " " + t);
+}
 
 /**
  *  Changes team timeouts

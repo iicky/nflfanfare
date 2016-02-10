@@ -231,13 +231,13 @@ function initScoreboard(d){
               "translate(" + timex + ", 0)");
 
     quarter.append("rect")
-           .attr("id", "boardquarter")
            .attr("class", "boardrect")
            .attr("height", quarterheight)
            .attr("width", quarterwidth)
            .attr("x", 0).attr("y", quartery);
 
     quarter.append("text")
+           .attr("id", "boardquarter")
            .text("FINAL")
            .attr("class", "boardquartertext")
            .attr("x", quarterwidth/2).attr("y", quartery + quarterheight/2);

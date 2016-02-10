@@ -145,10 +145,18 @@ class Statistics:
         homecolors = ff.db.teams.find_one({'teamid': game['hometeam']})['colors']
         awaycolors = ff.db.teams.find_one({'teamid': game['awayteam']})['colors']
 
-        game['homecolor'] = homecolors[0]
-        if game['homecolor'] == awaycolors[0]:
-            game['awaycolor'] = awaycolors[1]
+        # Primary color
+        game['homecolorpri'] = homecolors[0]
+        if game['homecolorpri'] == awaycolors[0]:
+            game['awaycolorpri'] = awaycolors[1]
         else:
-            game['awaycolor'] = awaycolors[0]
+            game['awaycolorpri'] = awaycolors[0]
+
+        # Secondary color
+        game['homecolorsec'] = homecolors[1]
+        if game['homecolorsec'] == awaycolors[1]:
+            game['awaycolorsec'] = awaycolors[0]
+        else:
+            game['awaycolorsec'] = awaycolors[1]
 
         return game
