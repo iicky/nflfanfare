@@ -134,6 +134,7 @@ class Plays:
         df['playid'] = df.playid.astype(int)
         df = df.sort_values(by=['drive', 'quarter', 'gameclock', 'playid'], ascending=[
                             True, True, False, True])
+        df = df.reset_index(drop=True)
 
         # Calculate current score for each play
         homescore = []
