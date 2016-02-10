@@ -8,7 +8,7 @@ function drawSentGraph(d){
 
     //------------------------------------------
     // Sentiment graph definitions
-    var margin = {top: 20, right: 30, bottom: 20, left: 30}
+    var margin = {top: 20, right: 75, bottom: 20, left: 75}
         width = 700 - margin.left - margin.right,
         height = 300 - margin.top - margin.bottom;
 
@@ -193,6 +193,7 @@ function drawSentGraph(d){
         possession(playi);
         timeouts(playi);
         quarter(playi);
+        sentiment(senti);
     };
 
 };
@@ -292,3 +293,18 @@ function timeouts(p) {
         boardawaytimeout3.attr("class", "boardtimeoutoff");        
     }
 };
+
+/**
+ *  Changes focus bar sentiment
+ */
+function sentiment(s) {
+
+    var focushomesent = d3.select("#focushomesent");
+    var focusawaysent = d3.select("#focusawaysent");
+
+    var hsent = data.gametime[s].homesentiment.toFixed(2);
+    var asent = data.gametime[s].awaysentiment.toFixed(2);
+    focushomesent.text(hsent);
+    focusawaysent.text(asent);
+
+}
