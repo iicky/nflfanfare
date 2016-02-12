@@ -136,6 +136,29 @@ class Plays:
                             True, True, False, True])
         df = df.reset_index(drop=True)
 
+        # Insert pregame
+        pregame = {'playid': 'pre', 'quarter': 'PREGAME', 'note': 'PREGAME'}
+        line = pd.DataFrame(pregame, index=[0])
+        df = pd.concat([line, df.ix[0:]]).reset_index(drop=True)
+
+        # Insert halftime
+        halftime = {'playid': ['halfst', 'halfend'],
+                    'quarter': ['HALFTIME', 'HALFTIME'],
+                    'note': ['HALFTIME', 'HALFTIME']}
+        line = pd.DataFrame(halftime, index=[0, 1])
+        end2 = df[df.quarter == 2].iloc[-1].name
+        start3 = df[df.quarter == 3].iloc[0].name
+        df = pd.concat([df.ix[0:end2], line, df.ix[start3:]]
+                       ).reset_index(drop=True)
+
+        # Insert postgame
+        postgame = {'playid': 'post',
+                    'quarter': 'POSTGAME', 'note': 'POSTGAME'}
+        line = pd.DataFrame(postgame, index=[0])
+        df = pd.concat([df.ix[0:], line]).reset_index(drop=True)
+
+        df = df.where((pd.notnull(df)), None)
+
         # Calculate current score for each play
         homescore = []
         awayscore = []
@@ -307,6 +330,18 @@ class Plays:
 
         except:
             print "Could not add film info for game %s play %s" % (gameid, playid)
+
+    def has_play(self, gameid, playid):
+        ''' Returns true if play in database
+        '''
+        result = ff.db.games.find_one({'gameid': gameid,
+                                       'plays': {
+                                           '$elemMatch': {
+                                               'playid': playid}}
+                                       })
+        if not result == None:
+            return True
+        return False
 
     def has_film_info(self, gameid, playid):
         ''' Returns true if play has film info
