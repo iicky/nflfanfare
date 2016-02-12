@@ -172,21 +172,22 @@ function drawSentGraph(d){
     var playindex = d3.bisector(function(d){ return d.predtime.$date }).right;
     var sentindex = d3.bisector(function(d){ return d.time.$date }).right;
 
+    console.log(sentindex(data.gametime, data.starttime.$date));
 
     // Mouse move function
     function mousemove() {
         var x0 = d3.mouse(this)[0];
-        var senttime = x.invert(x0);
-        var playi = playindex(data.plays, Date.parse(senttime));
-        var senti = sentindex(data.gametime, Date.parse(senttime));
-        playi = playitem(playi);
+        var xtime = x.invert(x0);
+
+        var playi = playitem(xtime);
+        var senti = sentindex(data.gametime, Date.parse(xtime));
 
         // Move focus line
         focus.attr("transform",
                    "translate(" + x0 + ",0)");        
 
         // Board updates
-        boardtime.text(parseDate(senttime));
+        boardtime.text(parseDate(xtime));
         boardhomescore.text(data.plays[playi].homescore);
         boardawayscore.text(data.plays[playi].awayscore);
         boardplay.text(prettyPlay(data.plays[playi].description));
@@ -201,11 +202,23 @@ function drawSentGraph(d){
 /**
  *  Fixes playtime index for postgame
  */
-function playitem(p) {
-    if (typeof data.plays[p] === 'undefined'){ 
-        return 0; 
+function playitem(xtime) {
+
+    var len = data.plays.length;
+    var playindex = d3.bisector(function(d){ return d.predtime.$date }).right;
+
+    if (Date.parse(xtime) < data.starttime.$date) {
+        return 0;
     }
-    else { return p; }
+    else if (Date.parse(xtime) > data.plays[len-1].predtime.$date) {
+        return len-1;
+    }
+    else if (playindex(data.plays, Date.parse(xtime)) === 'undefined') {
+        return len-1;
+    }
+    else {
+        return playindex(data.plays, Date.parse(xtime));
+    }
 };
 
 /**
@@ -234,9 +247,16 @@ function possession(p) {
  */
 function quarter(p) {
     var boardquarter = d3.select("#boardquarter");
-    var q = "Q" + data.plays[p].quarter.toString();
-    var t = data.plays[p].gameclock;
-    boardquarter.text(q + " " + t);
+    var qtr = data.plays[p].quarter;
+
+    if(typeof qtr === 'number'){
+        var q = "Q" + qtr.toString();
+        var t = data.plays[p].gameclock;
+        boardquarter.text(q + " " + t);
+    }
+    else {
+        boardquarter.text(qtr);
+    }
 }
 
 /**

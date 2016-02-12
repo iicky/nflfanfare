@@ -76,3 +76,7 @@ SQL/dump/NFL/teams.bson
 SQL/dump/NFL/system.indexes.bson
 
 SQL/dump/NFL/games.metadata.json
+
+SQL/dump/NFL/teamtweets.bson
+
+SQL/dump/NFL/teamtweets.metadata.json
