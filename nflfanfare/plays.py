@@ -1,12 +1,15 @@
+from bs4 import BeautifulSoup
 from datetime import datetime, timedelta
 import numpy as np
 import os
 import pandas as pd
 import nflgame
 import nflvid
-import urllib2
+from selenium import webdriver
+from StringIO import StringIO
 import pytz
 import time
+import urllib2
 import warnings
 
 import nflfanfare as ff
@@ -32,7 +35,7 @@ class Plays:
         start = pytz.timezone('UTC').localize(game['starttime'])
         start = start.astimezone(pytz.timezone('US/Eastern'))
         pfrid = ff.team.pfrid_from_teamid(game['hometeam'])
-        url = self.pfr_boxscore_link(start.year, start.month, start.day, pfrid)
+        url = ff.sched.pfr_boxscore_link(start.year, start.month, start.day, pfrid)
 
         try:
             # Open url in browser
