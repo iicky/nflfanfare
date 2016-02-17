@@ -15,8 +15,7 @@ class Collector:
     def manual_live(self, gameid):
         ''' Manually start scraping of live game
         '''
-
-        #started = datetime.utcnow()
+        started = datetime.utcnow()
 
         info = ff.sched.game_info(gameid)
 
@@ -58,7 +57,8 @@ class Collector:
             elif method == 'bulk':
                 ff.twitter.bulk_historic(hashtag, pre, post, verbose=verbose)
 
-    def collect_historic_by_team(self, gameid, teamid, method='api', verbose=False):
+    def collect_historic_by_team(self, gameid, teamid, method='api',
+                                 verbose=False):
         ''' Collects tweets for a historic game given a team
         '''
         info = ff.sched.game_info(gameid)
@@ -93,10 +93,13 @@ class Collector:
         info = ff.sched.game_info(gameid)
         pre, post = ff.sched.pre_post_times(info['starttime'])
 
-        homeusername = ff.db.teams.find_one({ 'teamid': info['hometeam'] })['username']
-        awayusername = ff.db.teams.find_one({ 'teamid': info['awayteam'] })['username']
+        homeusername = ff.db.teams.find_one(
+            {'teamid': info['hometeam']})['username']
+        awayusername = ff.db.teams.find_one(
+            {'teamid': info['awayteam']})['username']
         usernames = [homeusername, awayusername]
 
         for username in usernames:
             if method == 'bulk':
-                ff.twitter.bulk_timeline_historic(username, pre, post, verbose=verbose)
+                ff.twitter.bulk_timeline_historic(username,
+                                                  pre, post, verbose=verbose)
