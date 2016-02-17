@@ -17,9 +17,9 @@ function drawSentGraph(d){
         .attr("width", width + margin.left + margin.right)
         .attr("height", height + margin.top + margin.bottom)
         .append("g")
-        .attr("transform", 
+        .attr("transform",
               "translate(" + margin.left + "," + margin.top + ")");
-    
+
     //------------------------------------------
     // Axis definitions
     var x = d3.time.scale().range([0, width]);
@@ -184,13 +184,19 @@ function drawSentGraph(d){
 
         // Move focus line
         focus.attr("transform",
-                   "translate(" + x0 + ",0)");        
+                   "translate(" + x0 + ",0)");
 
         // Board updates
         boardtime.text(parseDate(xtime));
         boardhomescore.text(data.plays[playi].homescore);
         boardawayscore.text(data.plays[playi].awayscore);
-        boardplay.text(prettyPlay(data.plays[playi].description));
+        //boardplay.text(prettyPlay(data.plays[playi].description));
+
+        d3plus.textwrap()
+              .container(d3.select("#boardplay"))
+              .text(prettyPlay(data.plays[playi].description))
+              .draw();
+
         possession(playi);
         timeouts(playi);
         quarter(playi);
@@ -285,7 +291,7 @@ function timeouts(p) {
     else if (data.plays[p].hometimeouts == 0){
         boardhometimeout1.attr("class", "boardtimeoutoff");
         boardhometimeout2.attr("class", "boardtimeoutoff");
-        boardhometimeout3.attr("class", "boardtimeoutoff");        
+        boardhometimeout3.attr("class", "boardtimeoutoff");
     }
 
     var boardawaytimeout1 = d3.select("#boardawaytimeout1");
@@ -310,7 +316,7 @@ function timeouts(p) {
     else if (data.plays[p].awaytimeouts == 0){
         boardawaytimeout1.attr("class", "boardtimeoutoff");
         boardawaytimeout2.attr("class", "boardtimeoutoff");
-        boardawaytimeout3.attr("class", "boardtimeoutoff");        
+        boardawaytimeout3.attr("class", "boardtimeoutoff");
     }
 };
 

@@ -11,7 +11,12 @@ function parseDate(stamp){
  */
 function prettyPlay(play){
     //return play.split('. ')[0];
-    return play
+    if (play === 'undefined'){
+        return ' ';
+    }
+    else {
+        return play;
+    }
 };
 
 /**
@@ -32,7 +37,7 @@ function initScoreboard(d){
         .attr("width", width + margin.left + margin.right)
         .attr("height", height + margin.top + margin.bottom)
         .append("g")
-        .attr("transform", 
+        .attr("transform",
               "translate(" + margin.left + "," + margin.top + ")");
 
     //------------------------------------------
@@ -263,28 +268,43 @@ function initScoreboard(d){
 
     //------------------------------------------
     // Play description definitions
+    var playatrs = {
+        height: 40,
+        //width: width,
+        width: awaylogox + logowidth - homelogox,
+        x: homelogox,
+        //x: 0,
+        y: logoheight + margin.left*2
+    };
 
-    var playheight = 20;
-    var playwidth = awaylogox + logowidth - homelogox;
-    var playx = homelogox;
-    var playy = logoheight + margin.left*2;
+
+    //var playheight = 20;
+    //var playwidth = awaylogox + logowidth - homelogox;
+    //var playx = homelogox;
+    //var playy = logoheight + margin.left*2;
 
     // Time information
     var play = board.append("g")
         .attr("id", "boardplaygroup")
         .attr("transform",
-              "translate(" + playx + "," + playy + ")");
+              "translate(" + playatrs.x + "," + playatrs.y + ")");
 
     play.append("rect")
+        .attr("id", "boardplayrect")
         .attr("class", "boardrect")
-        .attr("height", playheight)
-        .attr("width", playwidth)
+        .attr("height", playatrs.height)
+        .attr("width", playatrs.width)
         .attr("x", 0).attr("y", 0);
 
     play.append("text")
-        .text(prettyPlay(lastplay.description))
+        //.text(prettyPlay(lastplay.description))
         .attr("id", "boardplay")
         .attr("class", "boardplaytext")
-        .attr("x", playwidth/2).attr("y", playheight/2);
+        //.attr("x", playatrs.width/2).attr("y", playatrs.height/2);
+
+    d3plus.textwrap()
+          .container(d3.select("#boardplay"))
+          .text(prettyPlay(lastplay.description))
+          .draw();
 
 };
