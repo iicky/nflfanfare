@@ -18,5 +18,3 @@ sched = sched.Schedule()
 stats = stats.Statistics()
 team = team.Team()
 twitter = twitter.Twitter()
-
-

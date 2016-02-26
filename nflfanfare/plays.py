@@ -33,7 +33,8 @@ class Plays:
         ''' Changes pfrid to teamid in play location
         '''
         location = location.split()
-        return '%s %s' % (ff.team.teamid_from_pfrid(location[0].lower()), location[1])
+        return '%s %s' % (ff.team.teamid_from_pfrid(location[0].lower()),
+                          location[1])
 
     def pfr_plays(self, gameid):
         ''' Returns dataframe of plays from Pro Football Reference
@@ -42,12 +43,16 @@ class Plays:
         start = pytz.timezone('UTC').localize(game['starttime'])
         start = start.astimezone(pytz.timezone('US/Eastern'))
         pfrid = ff.team.pfrid_from_teamid(game['hometeam'])
-        url = ff.sched.pfr_boxscore_link(start.year, start.month, start.day, pfrid)
+        url = ff.sched.pfr_boxscore_link(start.year,
+                                         start.month,
+                                         start.day,
+                                         pfrid)
 
         try:
             # Open url in browser
-            browser = webdriver.PhantomJS(executable_path='/usr/local/bin/phantomjs',
-                                          service_log_path=os.path.devnull)
+            browser = webdriver.PhantomJS(
+                executable_path='/usr/local/bin/phantomjs',
+                service_log_path=os.path.devnull)
             browser.get(url)
 
             # Click button to get CSV
@@ -75,9 +80,9 @@ class Plays:
             plays = plays.split('\n')
             csv = ''
             for line in plays:
-                if (not line == ''
-                        and not line[0] == ','
-                        and not 'Quarter' in line):
+                if (not line == '' and not
+                        line[0] == ',' and
+                        'Quarter' not in line):
                     csv += '%s\n' % line
 
             # Read into pandas dataframe
@@ -142,8 +147,8 @@ class Plays:
 
         # Change playid to integer and sort
         df['playid'] = df.playid.astype(int)
-        df = df.sort_values(by=['drive', 'quarter', 'gameclock', 'playid'], ascending=[
-                            True, True, False, True])
+        df = df.sort_values(by=['drive', 'quarter', 'gameclock', 'playid'],
+                            ascending=[True, True, False, True])
         df = df.reset_index(drop=True)
 
         # Insert pregame
@@ -225,7 +230,7 @@ class Plays:
                                            '$elemMatch': {
                                                'playid': playid}}
                                        })
-        if not result == None:
+        if result is not None:
             return True
         return False
 
