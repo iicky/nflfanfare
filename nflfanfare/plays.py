@@ -1,11 +1,17 @@
 from bs4 import BeautifulSoup
 from datetime import datetime, timedelta
+import difflib
 import numpy as np
 import os
 import pandas as pd
 import nflgame
 import nflvid
+import nltk
+from nltk import wordnet
+import nltk.corpus
+import nltk.tokenize.punkt
 from selenium import webdriver
+import string
 from StringIO import StringIO
 import pytz
 import time
@@ -195,6 +201,41 @@ class Plays:
         else:
             return 0
 
+    def add_plays(self, gameid):
+        ''' Add plays for gameid to the database
+        '''
+        df = self.nflgame_plays(gameid)
+
+        try:
+            update = ff.db.games.update_one(
+                {'gameid': gameid},
+                {'$set': {
+                    'plays': df.to_dict(orient='records')
+                }
+                })
+        except:
+            print "Could not add plays for %s to database." % gameid
+
+    def has_play(self, gameid, playid):
+        ''' Returns true if play in database
+        '''
+        result = ff.db.games.find_one({'gameid': gameid,
+                                       'plays': {
+                                           '$elemMatch': {
+                                               'playid': playid}}
+                                       })
+        if not result == None:
+            return True
+        return False
+
+
+class Film:
+    ''' Coaches film downloader class
+    '''
+
+    def __init__(self):
+        pass
+
     def download_video(self, url, path, verbose=False):
         ''' Downloads coaches video from NeuLion
         '''
@@ -275,20 +316,47 @@ class Plays:
                 if not os.listdir(directory):
                     os.rmdir(directory)
 
-    def add_plays(self, gameid):
-        ''' Add plays for gameid to the database
+    def film_info_togo(self, gameid):
+        ''' Returns the number of play film info missing from a gameid
         '''
-        df = self.nflgame_plays(gameid)
-
         try:
-            update = ff.db.games.update_one(
-                {'gameid': gameid},
-                {'$set': {
-                    'plays': df.to_dict(orient='records')
+            total = list(ff.db.games.aggregate([
+                {'$match': {'gameid': gameid}},
+                {'$project': {
+                    '_id': 0,
+                    'total': {'$size': '$plays'},
                 }
-                })
+                }]))
+
+            done = list(ff.db.games.aggregate([
+                {'$match': {'gameid': gameid}},
+                {'$unwind': '$plays'},
+                {'$match': {'plays.filmstart': {'$exists': 'true'}}},
+                {'$group': {'_id': 'null', 'count': {'$sum': 1}}}
+            ]))
+
+            if not list(done) == []:
+                return total[0]['total'] - done[0]['count']
+            else:
+                return total[0]['total']
+
         except:
-            print "Could not add plays for %s to database." % gameid
+            print "Could not get film info counts for game %s" % gameid
+        return None
+
+    def has_film_info(self, gameid, playid):
+        ''' Returns true if play has film info
+        '''
+        result = ff.db.games.find_one({'gameid': gameid,
+                                       'plays': {
+                                           '$elemMatch': {
+                                               'playid': playid,
+                                               'filmstart': {'$exists': 'true'}
+                                           }}
+                                       })
+        if not result == None:
+            return True
+        return False
 
     def add_film_info(self, gameid, playid, verbose=False):
         ''' Adds film information for play into database
@@ -334,56 +402,51 @@ class Plays:
         except:
             print "Could not add film info for game %s play %s" % (gameid, playid)
 
-    def has_play(self, gameid, playid):
-        ''' Returns true if play in database
+
+class Matcher:
+    ''' Matches nflgame plays with PFR plays
+    '''
+
+    def __init__(self):
+        self.tokenizer = nltk.tokenize.WordPunctTokenizer()
+        self.lemmatizer = nltk.stem.wordnet.WordNetLemmatizer()
+
+        self.stopwords = nltk.corpus.stopwords.words('english')
+        self.stopwords.extend(string.punctuation)
+        self.stopwords.append('')
+
+    def wordnet_pos(self, pos_tag):
+        ''' Returns part of speech for a word
         '''
-        result = ff.db.games.find_one({'gameid': gameid,
-                                       'plays': {
-                                           '$elemMatch': {
-                                               'playid': playid}}
-                                       })
-        if not result == None:
-            return True
-        return False
+        if pos_tag[1].startswith('J'):
+            return (pos_tag[0], wordnet.wordnet.ADJ)
+        elif pos_tag[1].startswith('V'):
+            return (pos_tag[0], wordnet.wordnet.VERB)
+        elif pos_tag[1].startswith('N'):
+            return (pos_tag[0], wordnet.wordnet.NOUN)
+        elif pos_tag[1].startswith('R'):
+            return (pos_tag[0], wordnet.wordnet.ADV)
+        else:
+            return (pos_tag[0], wordnet.wordnet.NOUN)
 
-    def has_film_info(self, gameid, playid):
-        ''' Returns true if play has film info
+    def lemma_match(self, a, b):
+        ''' Returns match ratio for play lemmae
         '''
-        result = ff.db.games.find_one({'gameid': gameid,
-                                       'plays': {
-                                           '$elemMatch': {
-                                               'playid': playid,
-                                               'filmstart': {'$exists': 'true'}
-                                           }}
-                                       })
-        if not result == None:
-            return True
-        return False
+        pos_a = map(self.wordnet_pos,
+                    nltk.pos_tag(self.tokenizer.tokenize(a)))
+        pos_b = map(self.wordnet_pos,
+                    nltk.pos_tag(self.tokenizer.tokenize(b)))
 
-    def film_info_togo(self, gameid):
-        ''' Returns the number of play film info missing from a gameid
-        '''
-        try:
-            total = list(ff.db.games.aggregate([
-                {'$match': {'gameid': gameid}},
-                {'$project': {
-                    '_id': 0,
-                    'total': {'$size': '$plays'},
-                }
-                }]))
+        lemmae_a = [self.lemmatizer.lemmatize(
+                    token.lower().strip(string.punctuation), pos)
+                    for token, pos in pos_a
+                    if token.lower().strip(string.punctuation)
+                    not in self.stopwords]
+        lemmae_b = [self.lemmatizer.lemmatize(
+                    token.lower().strip(string.punctuation), pos)
+                    for token, pos in pos_b
+                    if token.lower().strip(string.punctuation)
+                    not in self.stopwords]
 
-            done = list(ff.db.games.aggregate([
-                {'$match': {'gameid': gameid}},
-                {'$unwind': '$plays'},
-                {'$match': {'plays.filmstart': {'$exists': 'true'}}},
-                {'$group': {'_id': 'null', 'count': {'$sum': 1}}}
-            ]))
-
-            if not list(done) == []:
-                return total[0]['total'] - done[0]['count']
-            else:
-                return total[0]['total']
-
-        except:
-            print "Could not get film info counts for game %s" % gameid
-        return None
+        s = difflib.SequenceMatcher(None, lemmae_a, lemmae_b)
+        return s.ratio()
