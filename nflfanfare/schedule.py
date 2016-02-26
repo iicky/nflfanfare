@@ -557,4 +557,3 @@ class Schedule:
         for g in games:
             print g['gameid']
             self.update_game_sentiment(g['gameid'])
-
