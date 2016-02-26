@@ -10,6 +10,7 @@ import nltk
 from nltk import wordnet
 import nltk.corpus
 import nltk.tokenize.punkt
+import pymongo
 from selenium import webdriver
 import string
 from StringIO import StringIO
@@ -307,7 +308,8 @@ class Film:
                     self.add_film_info(gameid, play, verbose=verbose)
                 else:
                     if verbose:
-                        print "Film info for game %s play %s is already collected." % (gameid, play)
+                        print ("Film info for game %s play %s ",
+                               "is already collected.") % (gameid, play)
                 if os.path.exists(path):
                     os.remove(path)
 
@@ -347,14 +349,15 @@ class Film:
     def has_film_info(self, gameid, playid):
         ''' Returns true if play has film info
         '''
-        result = ff.db.games.find_one({'gameid': gameid,
-                                       'plays': {
-                                           '$elemMatch': {
-                                               'playid': playid,
-                                               'filmstart': {'$exists': 'true'}
-                                           }}
-                                       })
-        if not result == None:
+        result = ff.db.games.find_one(
+            {'gameid': gameid,
+             'plays': {
+                 '$elemMatch': {
+                     'playid': playid,
+                     'filmstart': {'$exists': 'true'}
+                 }}
+             })
+        if result is not None:
             return True
         return False
 
@@ -369,7 +372,7 @@ class Film:
         try:
             play = nflvid.play(info, str(playid))
 
-            if not play == None:
+            if play is not None:
                 filmurl = self.neulion_url(game, playid, start)
 
                 filmstart = timedelta(hours=play.start.hh,
@@ -385,22 +388,30 @@ class Film:
                     filmend = None
                     filmlength = None
             else:
-                filmurl, filmstart, filmend, filmlength = None, None, None, None
+                filmurl,
+                filmstart,
+                filmend,
+                filmlength = None, None, None, None
 
-            ff.db.games.update_one({'gameid': gameid,
-                                    'plays.playid': playid},
-                                   {'$set': {
-                                       'plays.$.filmurl': filmurl,
-                                       'plays.$.filmstart': None if filmstart == None else str(filmstart),
-                                       'plays.$.filmend': None if filmend == None else str(filmend),
-                                       'plays.$.filmlength': None if filmlength == None else str(filmlength)
-                                   }
-            })
+            ff.db.games.update_one(
+                {'gameid': gameid,
+                 'plays.playid': playid},
+                {'$set': {
+                    'plays.$.filmurl': filmurl,
+                    'plays.$.filmstart': (None if filmstart is None
+                                          else str(filmstart)),
+                    'plays.$.filmend': (None if filmend is None
+                                        else str(filmend)),
+                    'plays.$.filmlength': (None if filmlength is None
+                                           else str(filmlength))
+                }})
             if verbose:
-                print "Added film info for game %s play %s to database." % (gameid, playid)
+                print ("Added film info for game ",
+                       "%s play %s to database.") % (gameid, playid)
 
         except:
-            print "Could not add film info for game %s play %s" % (gameid, playid)
+            print ("Could not add film info ",
+                   "for game %s play %s") % (gameid, playid)
 
 
 class Matcher:
@@ -414,6 +425,19 @@ class Matcher:
         self.stopwords = nltk.corpus.stopwords.words('english')
         self.stopwords.extend(string.punctuation)
         self.stopwords.append('')
+
+    def pfrplays(self, gameid):
+        ''' Returns dataframe of Pro Football Reference plays
+        '''
+        plays = list(ff.db.pfrplays.find({'gameid': gameid}).
+                     sort('sequence', pymongo.ASCENDING))
+        return pd.DataFrame(plays)
+
+    def nflplays(self, gameid):
+        ''' Returns dataframe of nflgame plays
+        '''
+        game = ff.db.games.find_one({'gameid': gameid})
+        return pd.DataFrame(list(game['plays']))
 
     def wordnet_pos(self, pos_tag):
         ''' Returns part of speech for a word
@@ -450,3 +474,90 @@ class Matcher:
 
         s = difflib.SequenceMatcher(None, lemmae_a, lemmae_b)
         return s.ratio()
+
+    def match_plays(self, gameid):
+        ''' Matches nflgame plays to PFR plays
+            Adds update to database
+        '''
+        pfr = self.pfrplays(gameid)
+        nfl = self.nflplays(gameid)
+
+        for i1, r1 in pfr.iterrows():
+            jac, row, ind = 0, None, None
+            for i2, r2 in nfl.iterrows():
+
+                if (r1['quarter'] == r2['quarter'] and
+                        r1['down'] == r2['down']):
+
+                    gc1 = r1['gameclock'].split(':')
+                    gc2 = r2['gameclock'].split(':')
+                    min1, sec1 = gc1[0], int(gc1[1])
+                    min2, sec2 = gc2[0], int(gc2[1])
+
+                    if (min1 == min2 or r1['location'] == r2['ydline']):
+                        if abs(sec1 - sec2) < 10:
+                            if abs(i1 - i2) < 15:
+                                sim = self.lemma_match(r1['PFRdescription'],
+                                                       r2['description'])
+                                if sim > jac:
+                                    jac = sim
+                                    row = r2
+                                    ind = i2
+
+            matchid = '%s-%s' % (gameid, i1)
+
+            if row is None:
+                update = ff.db.pfrplays.update_one(
+                    {'_id': matchid},
+                    {'$set': {
+                        'note': None,
+                        'playid': None,
+                        'team': None,
+                        'filmstart': None,
+                        'filmurl': None,
+                        'filmlength': None,
+                        'filmend': None,
+                        'hometimeouts': None,
+                        'awaytimeouts': None,
+                        'predtime': None,
+                        'description': None
+                    }})
+            else:
+                update = ff.db.pfrplays.update_one(
+                    {'_id': matchid},
+                    {'$set': {
+                        'note': row['note'],
+                        'playid': row['playid'],
+                        'team': row['team'],
+                        'filmstart': row['filmstart'],
+                        'filmurl': row['filmurl'],
+                        'filmlength': row['filmlength'],
+                        'filmend': row['filmend'],
+                        'hometimeouts': row['hometimeouts'],
+                        'awaytimeouts': row['awaytimeouts'],
+                        'predtime': row['predtime'],
+                        'description': row['description']
+                    }})
+
+    def mark_matched(self, gameid):
+        ''' Marks a gameid as completely mark_matched
+        '''
+        try:
+            ff.db.games.update_one(
+                {'gameid': gameid},
+                {'$set': {
+                    'matched': True
+                }})
+        except:
+            print "Could not tag %s as complete." % gameid
+
+    def is_matched(self, gameid):
+        ''' Returns true if play matching is complete for gameid
+        '''
+        result = ff.db.games.find_one(
+            {'gameid': gameid,
+             'matched': True
+             })
+        if result is not None:
+            return True
+        return False
