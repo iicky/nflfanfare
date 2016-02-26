@@ -26,15 +26,18 @@ class Tweet:
         # Tweet information
         self.tweettext = re.sub(r'\\|\"|\'', '', tweet['text'])
         self.language = tweet['lang']
-        self.hashtags = ','.join([h['text'] for h in tweet['entities']['hashtags']]) if len(
-            tweet['entities']['hashtags']) > 0 else None
-        self.usermentions = ','.join([h['screen_name'] for h in tweet['entities'][
-                                      'user_mentions']]) if len(tweet['entities']['user_mentions']) > 0 else None
+        self.hashtags = (','.join([h['text']
+                                   for h in tweet['entities']['hashtags']])
+                         if len(tweet['entities']['hashtags']) > 0
+                         else None)
+        self.usermentions = (','.join([h['screen_name']
+                             for h in tweet['entities']['user_mentions']])
+                             if len(tweet['entities']['user_mentions']) > 0
+                             else None)
         self.postedtime = datetime.strptime(
             tweet['created_at'], '%a %b %d %H:%M:%S +0000 %Y')
         self.collectedtime = datetime.utcnow()
-        self.retweeted = False if not tweet.has_key(
-            'retweeted_status') else True
+        self.retweeted = False if 'retweeted_status' not in tweet else True
 
         # Sentiment information
         sid = SentimentIntensityAnalyzer().polarity_scores(tweet['text'])
@@ -56,8 +59,8 @@ class Scrape:
         self.source = 'scraped'
 
         # User information
-        self.userid = info['user']['bannerUrl'].split(
-            '/')[4] if info['user']['bannerUrl'] != None else None
+        self.userid = (info['user']['bannerUrl'].split('/')[4]
+                       if info['user']['bannerUrl'] is not None else None)
         self.username = info['user']['screenName']
         self.realname = info['user']['displayName']
         self.userlocation = info['user']['location']
@@ -67,10 +70,12 @@ class Scrape:
         # Tweet information
         self.tweettext = info['text']['textString']
         self.language = info['text']['lang']
-        self.hashtags = ','.join([tag['text'] for tag in info['text'][
-                                 'textParts'] if tag['isHashtag'] == True])
-        self.usermentions = ','.join([tag['text'] for tag in info['text'][
-                                     'textParts'] if tag['isMention'] == True])
+        self.hashtags = ','.join([tag['text']
+                                  for tag in info['text']['textParts']
+                                  if tag['isHashtag'] is True])
+        self.usermentions = ','.join([tag['text']
+                                      for tag in info['text']['textParts']
+                                      if tag['isMention'] is True])
         self.retweeted = info['isRetweeted']
         self.postedtime = datetime.strptime(
             info['utcTimestamp'][:19], '%Y-%m-%dT%H:%M:%S')
@@ -82,6 +87,7 @@ class Scrape:
         self.sent_neg = round(sid['neg'], 3)
         self.sent_neu = round(sid['neu'], 3)
         self.sent_compound = round(sid['compound'], 3)
+
 
 class Bulk:
     ''' Returns tweet object from bulk scraped result
