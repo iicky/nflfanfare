@@ -26,9 +26,11 @@ class Schedule:
         '''
         try:
             # Open url in browser
-            url = 'http://www.pro-football-reference.com/years/%s/games.htm' % year
-            browser = webdriver.PhantomJS(executable_path='/usr/local/bin/phantomjs',
-                                          service_log_path=os.path.devnull)
+            url = ('http://www.pro-football-reference.com/',
+                   'years/%s/games.htm') % year
+            browser = webdriver.PhantomJS(
+                        executable_path='/usr/local/bin/phantomjs',
+                        service_log_path=os.path.devnull)
             browser.get(url)
 
             # Click button to get CSV
@@ -56,9 +58,9 @@ class Schedule:
             games = games.split('\n')
             csv = ''
             for line in games:
-                if (not line == ''
-                        and not line[0] == ','
-                        and not 'Week' in line):
+                if (not line == '' and
+                        not line[0] == ',' and
+                        'Week' not in line):
                     csv += '%s,%s\n' % (year, line)
 
             return csv
@@ -71,9 +73,11 @@ class Schedule:
         '''
         try:
             # Open url in browser
-            url = 'http://www.pro-football-reference.com/years/%s/games.htm' % year
-            browser = webdriver.PhantomJS(executable_path='/usr/local/bin/phantomjs',
-                                          service_log_path=os.path.devnull)
+            url = ('http://www.pro-football-reference.com/',
+                   'years/%s/games.htm') % year
+            browser = webdriver.PhantomJS(
+                        executable_path='/usr/local/bin/phantomjs',
+                        service_log_path=os.path.devnull)
             browser.get(url)
 
             # Click button to get CSV
@@ -101,9 +105,9 @@ class Schedule:
             games = games.split('\n')
             csv = ''
             for line in games:
-                if (not line == ''
-                        and not line[0] == ','
-                        and not 'Week' in line):
+                if (not line == '' and
+                        not line[0] == ',' and
+                        'Week' not in line):
                     csv += '%s,%s\n' % (year, line)
             return csv
         except:
@@ -207,7 +211,7 @@ class Schedule:
         '''
 
         csv = self.completed_games_csv(year)
-        if csv == None:
+        if csv is None:
             return pd.DataFrame()
 
         # Read into pandas dataframe
@@ -248,10 +252,11 @@ class Schedule:
 
         # Gets PFRID and boxscore links for hometeams
         df['pfrid'] = df.hometeam.apply(ff.team.pfrid_from_teamid)
-        df['boxscore'] = df.apply(lambda row: self.pfr_boxscore_link(row['year'],
-                                                                     row['month'],
-                                                                     row['day'],
-                                                                     row['pfrid']), axis=1)
+        df['boxscore'] = df.apply(lambda row:
+                                  self.pfr_boxscore_link(row['year'],
+                                                         row['month'],
+                                                         row['day'],
+                                                         row['pfrid']), axis=1)
         df['completed'] = True
 
         return df
@@ -260,7 +265,7 @@ class Schedule:
         ''' Returns pending games csv as data frame
         '''
         csv = self.pending_games_csv(year)
-        if csv == None:
+        if csv is None:
             return pd.DataFrame()
 
         # Read into pandas dataframe
@@ -293,15 +298,17 @@ class Schedule:
 
         # Gets PFRID and boxscore links for hometeams
         df['pfrid'] = df.hometeam.apply(ff.team.pfrid_from_teamid)
-        df['boxscore'] = df.apply(lambda row: self.pfr_boxscore_link(row['year'],
-                                                                     row['month'],
-                                                                     row['day'],
-                                                                     row['pfrid']), axis=1)
+        df['boxscore'] = df.apply(lambda row:
+                                  self.pfr_boxscore_link(row['year'],
+                                                         row['month'],
+                                                         row['day'],
+                                                         row['pfrid']), axis=1)
 
         # Convert starttime to date
-        df['starttime'] = df.apply(lambda row: self.start_time(row['year'],
-                                                               row['date'],
-                                                               row['time']), axis=1)
+        df['starttime'] = df.apply(lambda row:
+                                   self.start_time(row['year'],
+                                                   row['date'],
+                                                   row['time']), axis=1)
 
         df['completed'] = False
 
@@ -332,9 +339,9 @@ class Schedule:
         ''' Returns true if gameid is complete
         '''
         result = ff.db.games.find_one({'gameid': gameid})
-        if not result == None:
-            if result.has_key('endtime'):
-                if not result['endtime'] == None:
+        if result is not None:
+            if 'endtime' in result:
+                if result['endtime'] is not None:
                     return True
         return False
 
@@ -348,7 +355,9 @@ class Schedule:
             'seasontype': row['seasontype'],
             'hometeam': row['hometeam'],
             'awayteam': row['awayteam'],
-            'starttime': row['starttime'] if 'starttime' in row.index else None,
+            'starttime': (row['starttime']
+                          if 'starttime' in row.index
+                          else None),
             'tweetcounts': {'hometeam': 0, 'awayteam': 0, 'total': 0}
         }
         try:
@@ -364,14 +373,22 @@ class Schedule:
                 {"gameid": gameid},
                 {
                     "$set": {
-                        'starttime': info['starttime'] if info.has_key('starttime') else None,
-                        'endtime': info['endtime'] if info.has_key('endtime') else None,
-                        'stadium': info['stadium'] if info.has_key('stadium') else None,
-                        'weather': info['weather'] if info.has_key('weather') else None,
-                        'wontoss': info['wontoss'] if info.has_key('wontoss') else None,
-                        'attendance': info['attendance'] if info.has_key('attendance') else None,
-                        'vegasline': info['vegasline'] if info.has_key('vegasline') else None,
-                        'overunder': info['overunder'] if info.has_key('overunder') else None
+                        'starttime': (info['starttime']
+                                      if 'starttime' in info else None),
+                        'endtime': (info['endtime']
+                                    if 'endtime' in info else None),
+                        'stadium': (info['stadium']
+                                    if 'stadium' in info else None),
+                        'weather': (info['weather']
+                                    if 'weather' in info else None),
+                        'wontoss': (info['wontoss']
+                                    if 'wontoss' in info else None),
+                        'attendance': (info['attendance']
+                                       if 'attendance' in info else None),
+                        'vegasline': (info['vegasline']
+                                      if 'vegasline' in info else None),
+                        'overunder': (info['overunder']
+                                      if 'overunder' in info else None)
                     }
                 }
             )
@@ -387,7 +404,8 @@ class Schedule:
         pdf = self.pending_games_df('2015')
         if not cdf.empty:
             for i, row in cdf.iterrows():
-                if not self.in_db(row['gameid']) and row['gameid'] != None:
+                if (not self.in_db(row['gameid']) and
+                        row['gameid'] is not None):
                     self.add_game(row)
 
                 # Update game with PFR info
@@ -459,7 +477,7 @@ class Schedule:
             }
 
         ])
-        if not result == None:
+        if result is not None:
             for r in result:
                 if 'gameid' in r:
                     return r['gameid']
