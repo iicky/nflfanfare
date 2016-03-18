@@ -50,7 +50,8 @@ class Twitter:
         # Finds the time until quota reset and sleeps
         if remaining == 0:
             delta = datetime.fromtimestamp(reset) - datetime.now()
-            print "Quota reached for search/tweets. Waiting %s seconds." % delta.total_seconds()
+            print ("Quota reached for search/tweets. Waiting %s seconds."
+                   % delta.total_seconds())
             time.sleep(delta.total_seconds())
             result = self.twi.request('search/tweets' % int(tweetid))
             return result
@@ -68,7 +69,8 @@ class Twitter:
         # Finds the time until quota reset and sleeps
         if remaining == 0:
             delta = datetime.fromtimestamp(reset) - datetime.now()
-            print "Quota reached for statuses/show/:id. Waiting %s seconds." % delta.total_seconds()
+            print ("Quota reached for statuses/show/:id. Waiting %s seconds."
+                   % delta.total_seconds())
             time.sleep(delta.total_seconds())
             result = self.twi.request('statuses/show/:%d' % int(tweetid))
             return result
@@ -149,26 +151,31 @@ class Twitter:
 
         try:
             if not self.in_db(tweet.tweetid):
-                if verbose == True:
-                    print "%s/%s - Adding %s: %s to database." % (outtweet['gameid'], teamid, tweet.username, tweet.tweettext)
+                if verbose:
+                    print ("%s/%s - Adding %s: ",
+                           " %s to database.") % (outtweet['gameid'],
+                                                  teamid,
+                                                  tweet.username,
+                                                  tweet.tweettext)
 
                 if col == 'tweets':
                     result = ff.db.tweets.insert_one(outtweet)
-                    if result.acknowledged == True:
+                    if result.acknowledged:
                         update = self.update_tweet_counts(
                             outtweet['gameid'], outtweet['teamid'])
                 elif col == 'teamtweets':
                     result = ff.db.teamtweets.insert_one(outtweet)
             else:
-                if verbose == True:
-                    print "Tweet %s is already in the database." % tweet.tweetid
+                if verbose:
+                    print ("Tweet %s is already in the database."
+                           % tweet.tweetid)
         except:
-            if verbose == True:
+            if verbose:
                 print "Could not add %s to database." % (tweet.tweetid)
                 print "Error:", sys.exc_info()
 
     def start_end_times(self, start, end):
-        ''' Converts start and end times for a game 
+        ''' Converts start and end times for a game
         '''
         if not type(start) == datetime:
 
@@ -228,8 +235,9 @@ class Twitter:
 
         try:
             # Open url in browser
-            browser = webdriver.PhantomJS(executable_path='/usr/local/bin/phantomjs',
-                                          service_log_path=os.path.devnull)
+            browser = webdriver.PhantomJS(
+                executable_path='/usr/local/bin/phantomjs',
+                service_log_path=os.path.devnull)
             browser.get(url)
 
             # Pretend to be a human
@@ -238,7 +246,8 @@ class Twitter:
             i = 1
             while True:
 
-                print "Scraping page %s for %s... %s" % (i, urllib2.unquote(search), url)
+                print ("Scraping page %s for %s... %s"
+                       % (i, urllib2.unquote(search), url))
 
                 # Get the source code for page
                 html = browser.page_source.encode("utf-8")
@@ -251,7 +260,8 @@ class Twitter:
                     tweetid = tweetid.attrs['href'].split('/')[3]
                     if self.in_db(tweetid):
                         if verbose:
-                            print "Tweet %s has already been collected" % tweetid
+                            print ("Tweet %s has already been collected"
+                                   % tweetid)
                         continue
                     try:
                         responses = self.searchid(tweetid)
@@ -260,8 +270,9 @@ class Twitter:
                             if not tweet.retweeted:
                                 self.add_to_db(tweet, team, verbose=verbose)
                     except:
-                        if verbose == True:
-                            print "Could not collect tweet %s." % (tweet.tweetid)
+                        if verbose:
+                            print ("Could not collect tweet %s."
+                                   % tweet.tweetid)
                             print "Error:", sys.exc_info()
                         pass
 
@@ -298,8 +309,9 @@ class Twitter:
 
         try:
             # Open url in browser
-            browser = webdriver.PhantomJS(executable_path='/usr/local/bin/phantomjs',
-                                          service_log_path=os.path.devnull)
+            browser = webdriver.PhantomJS(
+                executable_path='/usr/local/bin/phantomjs',
+                service_log_path=os.path.devnull)
             browser.get(url)
 
             # Pretend to be a human
@@ -308,7 +320,8 @@ class Twitter:
             i = 1
             while True:
 
-                print "Scraping page %s for %s... %s" % (i, urllib2.unquote(search), url)
+                print ("Scraping page %s for %s... %s"
+                       % (i, urllib2.unquote(search), url))
 
                 # Get the source code for page
                 html = browser.page_source.encode("utf-8")
@@ -323,7 +336,8 @@ class Twitter:
                     username = tweet[1]
                     if self.in_db(tweetid):
                         if verbose:
-                            print "Tweet %s has already been collected" % tweetid
+                            print ("Tweet %s has already been collected"
+                                   % tweetid)
                         continue
                     try:
                         response = self.scrapeid(username, tweetid)
@@ -331,7 +345,7 @@ class Twitter:
                         if not tweet.retweeted:
                             self.add_to_db(tweet, team, verbose=verbose)
                     except:
-                        if verbose == True:
+                        if verbose:
                             print "Could not collect tweet %s." % (tweetid)
                             print "Error:", sys.exc_info()
                         pass
@@ -359,21 +373,36 @@ class Twitter:
         '''
         try:
             tweetid = cell.find('div', {'class': 'Tweet'})
-            if not tweetid == None:
+            if tweetid is not None:
                 tweettext = cell.find('div', {'class': 'TweetText'}).text
                 entities = cell.find_all('span', {'class': 'TweetEntity'})
-                info = {'tweetid': tweetid.attrs['data-tweet-id'],
-                        'username': cell.find('span', {'class': 'UserNames-screenName'}).text.lstrip('@'),
-                        'realname': cell.find('b', {'class': 'UserNames-displayName'}).text,
-                        'userprofileimg': cell.find('img', {'class': 'UserAvatar'}).attrs['src'],
-                        'tweettext': tweettext,
-                        'language': cell.find('div', {'class': 'TweetText'}).attrs['lang'],
-                        'hashtags': ','.join([h.text.lstrip('#') for h in entities if '#' in h.text]),
-                        'usermentions': ','.join([h.text.lstrip('@') for h in entities if '@' in h.text]),
-                        'retweeted': True if 'RT ' in tweettext else False,
-                        'postedtime': datetime.strptime(cell.find('time').
-                                                        attrs['datetime'][:19], '%Y-%m-%dT%H:%M:%S')
-                        }
+                info = {
+                    'tweetid': tweetid.attrs['data-tweet-id'],
+                    'username':
+                        (cell.find('span', {'class': 'UserNames-screenName'})
+                         .text.lstrip('@')),
+                    'realname':
+                        (cell.find('b', {'class': 'UserNames-displayName'})
+                         .text),
+                    'userprofileimg':
+                        (cell.find('img', {'class': 'UserAvatar'})
+                         .attrs['src']),
+                    'tweettext': tweettext,
+                    'language':
+                        (cell.find('div', {'class': 'TweetText'})
+                         .attrs['lang']),
+                    'hashtags':
+                        (','.join([h.text.lstrip('#')
+                                   for h in entities if '#' in h.text])),
+                    'usermentions':
+                        (','.join([h.text.lstrip('@')
+                                   for h in entities if '@' in h.text])),
+                    'retweeted': True if 'RT ' in tweettext else False,
+                    'postedtime': (datetime.strptime(
+                                   cell.find('time')
+                                   .attrs['datetime'][:19],
+                                   '%Y-%m-%dT%H:%M:%S'))
+                }
                 return info
             return None
         except:
@@ -438,17 +467,18 @@ class Twitter:
         cells = soup.find_all('div', {'role': 'gridcell'})
         for cell in cells:
             info = self.bulk_cell_to_dict(cell)
-            if not info == None:
+            if info is not None:
                 if self.in_db(info['tweetid']):
                     if verbose:
-                        print "Tweet %s has already been collected" % info['tweetid']
+                        print ("Tweet %s has already been collected"
+                               % info['tweetid'])
                     continue
                 try:
                     tweet = ff.tweet.Bulk(info)
                     if not tweet.retweeted:
                         self.add_to_db(tweet, team, verbose=verbose)
                 except:
-                    if verbose == True:
+                    if verbose:
                         print "Could not collect tweet %s." % (info['tweetid'])
                         print "Error:", sys.exc_info()
                     pass
@@ -471,17 +501,21 @@ class Twitter:
         cells = soup.find_all('div', {'role': 'gridcell'})
         for cell in cells:
             info = self.bulk_cell_to_dict(cell)
-            if not info == None:
+            if info is not None:
                 if self.in_db(info['tweetid']):
                     if verbose:
-                        print "Tweet %s has already been collected" % info['tweetid']
+                        print ("Tweet %s has already been collected"
+                               % info['tweetid'])
                     continue
                 try:
                     tweet = ff.tweet.Bulk(info)
                     if not tweet.retweeted:
-                        self.add_to_db(tweet, team, verbose=verbose, col='teamtweets')
+                        self.add_to_db(tweet,
+                                       team,
+                                       verbose=verbose,
+                                       col='teamtweets')
                 except:
-                    if verbose == True:
+                    if verbose:
                         print "Could not collect tweet %s." % (info['tweetid'])
                         print "Error:", sys.exc_info()
                     pass
@@ -508,8 +542,11 @@ class Twitter:
         # Get NFL teamid from hashtag
         team = ff.team.teamid_from_hashtag(search)
 
-        result = TwitterRestPager(
-            self.twi, 'search/tweets', {'q': search, 'lang': 'en', 'count': 100, 'until': str(endstamp)})
+        result = TwitterRestPager(self.twi, 'search/tweets',
+                                  {'q': search,
+                                   'lang': 'en',
+                                   'count': 100,
+                                   'until': str(endstamp)})
         quota = self.quota('/search/tweets')
 
         for item in result.get_iterator():
@@ -525,26 +562,31 @@ class Twitter:
 
             elif 'message' in item and item['code'] == '88':
                 delta = datetime.fromtimestamp(quota['reset']) - datetime.now()
-                print "Quota reached for search/tweets. Waiting %s seconds." % delta.total_seconds()
+                print ("Quota reached for search/tweets. Waiting %s seconds."
+                       % delta.total_seconds())
                 time.sleep(delta.total_seconds())
 
     def tweet_gameid(self, tweetid):
         ''' Returns the game id for a tweet in database
         '''
         tweet = ff.db.tweets.find_one({'tweetid': tweetid})
-        if not tweet == None:
+        if tweet is not None:
+
+            pre = tweet['postedtime'] - timedelta(hours=1)
+            post = tweet['postedtime'] + timedelta(hours=4)
+
             result = ff.db.games.find_one({
                 '$and': [
                     {'$or': [{'hometeam': tweet['teamid']},
                              {'awayteam': tweet['teamid']}
                              ]},
-                    {'starttime': {'$gte': tweet['postedtime'] - timedelta(hours=1),
-                                   '$lt': tweet['postedtime'] + timedelta(hours=4)
+                    {'starttime': {'$gte': pre,
+                                   '$lt': post
                                    }
                      }
                 ]
             })
-            if not result == None:
+            if result is not None:
                 return result['gameid']
         return None
 
