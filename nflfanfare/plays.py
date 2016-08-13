@@ -11,6 +11,7 @@ from nltk import wordnet
 import nltk.corpus
 import nltk.tokenize.punkt
 import pymongo
+import re
 from selenium import webdriver
 import string
 from StringIO import StringIO
@@ -487,27 +488,34 @@ class Matcher:
         pfr = self.pfrplays(gameid)
         nfl = self.nflplays(gameid)
 
+        pfr['quarter'] = pfr.quarter.astype(int)
+
         for i1, r1 in pfr.iterrows():
             jac, row, ind = 0, None, None
-            for i2, r2 in nfl.iterrows():
+            nflq = nfl[nfl.quarter == r1['quarter']]
+
+            for i2, r2 in nflq.iterrows():
 
                 if (r1['quarter'] == r2['quarter'] and
                         r1['down'] == r2['down']):
-
-                    gc1 = r1['gameclock'].split(':')
-                    gc2 = r2['gameclock'].split(':')
-                    min1, sec1 = gc1[0], int(gc1[1])
-                    min2, sec2 = gc2[0], int(gc2[1])
-
-                    if (min1 == min2 or r1['location'] == r2['ydline']):
-                        if abs(sec1 - sec2) < 10:
-                            if abs(i1 - i2) < 15:
-                                sim = self.lemma_match(r1['PFRdescription'],
-                                                       r2['description'])
-                                if sim > jac:
-                                    jac = sim
-                                    row = r2
-                                    ind = i2
+                        try:
+                            gc1 = r1['gameclock'].split(':')
+                            gc2 = r2['gameclock'].split(':')
+                            min1, sec1 = gc1[0], int(gc1[1])
+                            min2, sec2 = gc2[0], int(gc2[1])
+                        except:
+                            continue
+                        if (min1 == min2 or
+                                r1['location'] == r2['ydline']):
+                            if abs(sec1 - sec2) < 10:
+                                if abs(i1 - i2) < 15:
+                                    sim = self.lemma_match(
+                                            r1['PFRdescription'],
+                                            r2['description'])
+                                    if sim > jac:
+                                        jac = sim
+                                        row = r2
+                                        ind = i2
 
             matchid = '%s-%s' % (gameid, i1)
 
@@ -566,3 +574,14 @@ class Matcher:
         if result is not None:
             return True
         return False
+
+    def unmatched_count(self, gameid):
+        ''' Returns the number of unmatched plays for a game
+        '''
+        mis = list(ff.db.pfrplays.find(
+                {'$and': [
+                    {'gameid': gameid},
+                    {'PFRdescription': {'$not': re.compile('.*Timeout.*')}},
+                    {'playid': None}
+                 ]}))
+        return len(mis)
