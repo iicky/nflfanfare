@@ -10,8 +10,7 @@ function parseDate(stamp){
  *  Returns a nicely formatted play descripion
  */
 function prettyPlay(play){
-    //return play.split('. ')[0];
-    if (play === 'undefined'){
+    if (play === typeof null){
         return ' ';
     }
     else {

@@ -9,14 +9,18 @@ del path
 
 import nflfanfare as ff
 
-games = ff.sched.all_games()
+games = list(ff.db.games.find())
 
-for g in games.gameid:
-	status = ff.sched.game_status(g)
+for g in games:
+	status = ff.sched.game_status(g['gameid'])
 	if status == "historic":
-		if ff.sched.game_tweet_counts(g)['total'] < 1000:
+		if g['tweetcounts']['hometeam'] < 3000:
 			try:
-				ff.col.collect_historic(g, verbose=True, method='scrape')
+				ff.col.collect_historic_by_team(g['gameid'], g['hometeam'], verbose=True, method='bulk')
 			except:
 				pass
-		
+		if g['tweetcounts']['awayteam'] < 3000:
+			try:
+				ff.col.collect_historic_by_team(g['gameid'], g['awayteam'], verbose=True, method='bulk')
+			except:
+				pass	
