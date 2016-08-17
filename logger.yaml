@@ -1,0 +1,43 @@
+version: 1
+formatters:
+  default:
+    format: '[%(asctime)s] %(levelname)s %(name)s.%(funcName)s:%(lineno)d: %(message)s'
+
+handlers:
+  file:
+    class: logging.FileHandler
+    level: INFO
+    formatter: default
+    filename: nflfanfare.log
+    encoding: utf8
+
+loggers:
+
+  gamecenter.Schedule:
+    level: INFO
+    handlers: [file]
+    formatter: default
+    propagate: no
+
+  gamecenter.Game:
+    level: INFO
+    handlers: [file]
+    formatter: default
+    propagate: no
+
+  gamecenter.Collector:
+    level: INFO
+    handlers: [file]
+    formatter: default
+    propagate: no
+
+  helpers.monitor_game:
+    level: INFO
+    handlers: [file]
+    formatter: default
+    propagate: no
+
+root:
+  level: INFO
+  formatter: default
+  handlers: [file]
