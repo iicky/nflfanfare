@@ -80,3 +80,11 @@ SQL/dump/NFL/games.metadata.json
 SQL/dump/NFL/teamtweets.bson
 
 SQL/dump/NFL/teamtweets.metadata.json
+
+.ipynb_checkpoints/NFLFanfare 2016-checkpoint.ipynb
+
+NFLFanfare 2016.ipynb
+
+nflfanfare.log
+
+logger.conf
