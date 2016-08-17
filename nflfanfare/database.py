@@ -14,7 +14,7 @@ class DB:
             'mongodb://%s:%s@%s:27017/NFL2016' % (sec.mongouser,
                                                   sec.mongopwd,
                                                   sec.mongohost))
-        self.db = self.client.NFL
+        self.db = self.client.NFL2016
 
         self.teams = self.db.teams
         self.games = self.db.games
