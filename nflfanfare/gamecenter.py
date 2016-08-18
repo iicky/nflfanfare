@@ -6,10 +6,12 @@ import json
 import logging
 import logging.config
 import numpy as np
+import os
 import pandas as pd
 import pymongo
 import pytz
 import requests
+import subprocess
 import sys
 import time
 
@@ -36,7 +38,7 @@ class Schedule:
             season, season type, and week
         '''
         # Create URL
-        url = ('http://www.nfl.com/ajax/scorestrip?' \
+        url = ('http://www.nfl.com/ajax/scorestrip?'
                'season=%s&seasonType=%s&week=%s' %
                (season, season_type, week))
 
@@ -97,15 +99,17 @@ class Schedule:
         # Create date from EID and time accounting for London games
         gdate = df.eid.apply(lambda x: x[:-2])
         gtime = df.t.apply(lambda x:
-                         x + ' AM' if x == '9:30' else x + ' PM')
+                           x + ' AM' if x == '9:30' else x + ' PM')
 
         # Convert scheduled time to datetime and localize to UTC
         df['scheduled'] = gdate + ' ' + gtime
         df['scheduled'] = pd.to_datetime(df.scheduled)
-        df['scheduled'] = df.scheduled.apply(lambda x:
+        df['scheduled'] = df.scheduled.apply(
+                              lambda x:
                               pytz.timezone('US/Eastern').localize(x))
-        df['scheduled'] = df.scheduled.apply(lambda x:
-                              x.astimezone(pytz.timezone('UTC')))
+        df['scheduled'] = df.scheduled.apply(
+                                lambda x:
+                                x.astimezone(pytz.timezone('UTC')))
 
         # Add week information
         df['week'] = week['w']
@@ -130,8 +134,8 @@ class Schedule:
             for week in self.weeks[season_type]:
 
                 # Check to see week is already parsed
-                week_check = (last['seasontype'] == season_type
-                             and last['week'] < week)
+                week_check = (last['seasontype'] == season_type and
+                              last['week'] < week)
 
                 # Check to see if last game is old and postseason
                 date_check = (season_type == 'POST' and
@@ -150,6 +154,9 @@ class Schedule:
         '''
         # Create URL
         url = 'http://www.nfl.com/liveupdate/scorestrip/ss.xml'
+
+        # Wait a random lognormal amount of seconds
+        time.sleep(np.random.lognormal(2, .5, 1)[0])
 
         # Return XML if response was successful
         r = requests.get(url)
@@ -172,6 +179,9 @@ class Schedule:
                 # Insert game into database
                 ff.db.games.insert_one(d)
 
+                # Log schedule update
+                self.log.info('Inserting game %s to the database.' % d['_id'])
+
     def _update(self):
         ''' Adds game updates to database and returns updated
             schedule dataframe
@@ -186,15 +196,15 @@ class Schedule:
         # Update each game in the database
         for d in data:
             ff.db.games.update_one({'_id': d['_id']},
-                                   {'$set': d })
+                                   {'$set': d})
 
         return df
 
     def _last_game(self, season):
         ''' Finds the date of the lastest game in the database
         '''
-        result = ff.db.games.find(). \
-                    sort('scheduled', pymongo.DESCENDING).limit(1)
+        result = ff.db.games.find().sort('scheduled',
+                                         pymongo.DESCENDING).limit(1)
         return list(result)[0]
 
 
@@ -213,8 +223,8 @@ class Game:
         self.info = self._game_info(self.gameid)
 
         # JSON url for game
-        self.url = ('http://www.nfl.com/liveupdate/game-center/%s/%s_gtd.json' %
-                    (self.info['eid'], self.info['eid']))
+        self.url = ('http://www.nfl.com/liveupdate/game-center/'
+                    '%s/%s_gtd.json' % (self.info['eid'], self.info['eid']))
 
         # Game status
         self.status = self._status()
@@ -226,7 +236,8 @@ class Game:
         if result:
             return result
 
-        self.log.error('The game id %s was not found in the database.' % gameid)
+        self.log.error('The game id %s was not found in the database.' %
+                       gameid)
         return None
 
     def _get_feed(self):
@@ -276,12 +287,6 @@ class Game:
     def _update(self):
         ''' Updates the play information for a game
         '''
-        # Ignore if game has not started
-        if not self.status == 'starting' and not self.status == 'live':
-            self.log.info('Waiting on game %s to start. Status: %s' %
-                          (self.info['gameid'], self.status))
-            return None
-
         plays = self._parse_feed()
 
         # Check to see if any plays
@@ -296,11 +301,11 @@ class Game:
                 if not result:
                     ff.db.plays.insert_one(play)
 
-                    self.log.info('Adding play %s to the database for game %s. '
-                                  '[%s: %s | %s: %s].' %
-                                   (play['playid'], play['gameid'],
-                                    play['hometeam'], play['homescore'],
-                                    play['awayteam'], play['awayscore']))
+                    self.log.info('Adding play %s to the database for game %s.'
+                                  ' [%s: %s | %s: %s].' %
+                                  (play['playid'], play['gameid'],
+                                   play['hometeam'], play['homescore'],
+                                   play['awayteam'], play['awayscore']))
 
     def _pre_post_times(self, starttime):
         ''' Returns timedelta of pregame and postgame times
@@ -318,6 +323,7 @@ class Game:
             now = datetime.utcnow()
             oneweek = now - timedelta(days=7)
             upcoming = now + timedelta(hours=1)
+            starting = now + timedelta(minutes=15)
 
             # Historic game (> 1 week)
             if start < oneweek:
@@ -358,14 +364,33 @@ class Collector:
         df = self.schedule[self.schedule.status == 'P'].copy()
 
         # Determine game status
-        df['status'] = df.eid.apply(lambda x: Game(x).status)
+        df['status'] = df.gameid.apply(lambda x: Game(x).status)
 
         return df
 
     def _spawn(self):
         ''' Spawns the monitoring process for all upcoming games
         '''
-        pass
+        # Get pending games
+        df = self._pending()
+
+        # Iterate through games
+        for i, r in df.iterrows():
+
+            if r['status'] == 'live' or r['status'] == 'starting':
+                info = ff.gc.Game(r['gameid']).info
+
+                # Check if game is not already updating
+                if 'updating' not in info.keys():
+                    subprocess.Popen(['python',
+                                      ff.sec.helper_path + 'monitor_game.py',
+                                      '--gameid',
+                                      r['gameid']],
+                                     stdin=None,
+                                     stdout=None,
+                                     stderr=None,
+                                     close_fds=True)
+        sys.exit(1)
 
     def _monitor(self, gameid):
         ''' Monitors a game JSON feed to update plays
@@ -375,9 +400,16 @@ class Collector:
 
             if game.info:
 
+                # Ignore if game has not started
+                if (not game.status == 'starting' and
+                        not game.status == 'live'):
+                    self.log.warn('Game %s is not starting and is %s.' %
+                                  (gameid, game.status))
+                    return None
+
                 # Mark game as being scraped
                 ff.db.games.update_one({'_id': game.info['_id']},
-                                       {'$set': {'updating': 'True' }})
+                                       {'$set': {'updating': True}})
                 self.log.info('Starting monitoring game %s.' % gameid)
 
                 # Current time and end time
@@ -405,8 +437,7 @@ class Collector:
                             sys.exc_info()[1]))
 
         finally:
-            if game.info:
-                # Mark game as finished
-                ff.db.games.update_one({'_id': game.info['_id']},
-                                       {'$unset': {'updating': '' }})
-                self.log.info('Stopping monitoring game %s.' % gameid)
+            # Mark game as finished
+            ff.db.games.update_one({'_id': gameid},
+                                   {'$unset': {'updating': ''}})
+            self.log.info('Stopping monitoring game %s.' % gameid)
