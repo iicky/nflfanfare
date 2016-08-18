@@ -11,9 +11,9 @@ if path not in sys.path:
     sys.path.insert(1, path)
 del path
 
-log = logging.getLogger('helpers.monitor_game')
-
 import nflfanfare as ff
+
+log = logging.getLogger('helpers.monitor_game')
 
 # Parse the game gameid for monitoring
 parser = argparse.ArgumentParser()
