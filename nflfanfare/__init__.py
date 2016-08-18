@@ -15,6 +15,9 @@ import nflfanfare.team as team
 import nflfanfare.tweet as tweet
 import nflfanfare.twitter as twitter
 
+def log_path():
+    return logging.FileHandler(sec.log_path)
+
 # Read and define logger
 path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 with open(path + '/logger.yaml', 'rt') as f:

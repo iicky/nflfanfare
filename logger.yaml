@@ -5,11 +5,9 @@ formatters:
 
 handlers:
   file:
-    class: logging.FileHandler
-    level: INFO
+    (): nflfanfare.log_path
     formatter: default
-    filename: nflfanfare.log
-    encoding: utf8
+
 
 loggers:
 
@@ -32,6 +30,12 @@ loggers:
     propagate: no
 
   helpers.monitor_game:
+    level: INFO
+    handlers: [file]
+    formatter: default
+    propagate: no
+
+  helpers.start_collector:
     level: INFO
     handlers: [file]
     formatter: default
