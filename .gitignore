@@ -88,3 +88,5 @@ NFLFanfare 2016.ipynb
 nflfanfare.log
 
 logger.conf
+
+*.log
