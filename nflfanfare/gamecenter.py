@@ -254,11 +254,11 @@ class Game:
         '''
         feed = self._get_feed()
 
+        # Empty dataframe for plays
+        df = pd.DataFrame()
+
         # Check if feed contains data
         if feed:
-
-            # Empty dataframe for plays
-            df = pd.DataFrame()
 
             # Convert drive keys to interger and sort
             drives = feed['drives']
@@ -304,8 +304,8 @@ class Game:
                     self.log.info('Adding play %s to the database for game %s.'
                                   ' [%s: %s | %s: %s].' %
                                   (play['playid'], play['gameid'],
-                                   play['hometeam'], play['homescore'],
-                                   play['awayteam'], play['awayscore']))
+                                   self.info['hometeam'], play['homescore'],
+                                   self.info['awayteam'], play['awayscore']))
 
     def _pre_post_times(self, starttime):
         ''' Returns timedelta of pregame and postgame times
@@ -361,7 +361,7 @@ class Collector:
     def _pending(self):
         ''' Returns a data frame of pending games
         '''
-        df = self.schedule[self.schedule.status == 'P'].copy()
+        df = self.schedule[self.schedule.status != 'F'].copy()
 
         # Determine game status
         df['status'] = df.gameid.apply(lambda x: Game(x).status)
@@ -379,6 +379,7 @@ class Collector:
 
             if r['status'] == 'live' or r['status'] == 'starting':
                 info = ff.gc.Game(r['gameid']).info
+                self.log.info('Game %s is %s' % (r['gameid'], r['status']))
 
                 # Check if game is not already updating
                 if 'updating' not in info.keys():
