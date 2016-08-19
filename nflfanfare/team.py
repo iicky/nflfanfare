@@ -56,7 +56,8 @@ class Team:
         ''' Returns the teamid for a hashtag
         '''
         try:
-            return ff.db.teams.find_one({'hashtags': {"$in": [hashtag]}})['teamid']
+            return ff.db.teams.find_one(
+                {'hashtags': {"$in": [hashtag]}})['teamid']
         except:
             return None
 
