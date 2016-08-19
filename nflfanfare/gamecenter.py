@@ -1,6 +1,6 @@
 from bs4 import BeautifulSoup
 from datetime import datetime, timedelta
-from dateutil import parser
+from dateutil.parser import parse
 import inspect
 import json
 import logging
