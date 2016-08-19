@@ -15,6 +15,7 @@ import nflfanfare.team as team
 import nflfanfare.tweet as tweet
 import nflfanfare.twitter as twitter
 
+
 def log_path():
     return logging.FileHandler(sec.log_path)
 
