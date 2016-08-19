@@ -158,11 +158,14 @@ class Schedule:
         # Wait a random lognormal amount of seconds
         time.sleep(np.random.lognormal(2, .5, 1)[0])
 
-        # Return XML if response was successful
-        r = requests.get(url)
-        if r.status_code == 200:
-            if len(r.text) > 50:
-                return self._parse_games(r.text)
+        try:
+            # Return XML if response was successful
+            r = requests.get(url)
+            if r.status_code == 200:
+                if len(r.text) > 50:
+                    return self._parse_games(r.text)
+        except:
+            return pd.DataFrame()
 
     def _add_schedule(self, season):
         ''' Adds scheduled games to database
@@ -188,15 +191,16 @@ class Schedule:
         '''
         # Converts schedule data frame to dictionary
         df = self._get_update()
-        data = df.to_dict(orient='records')
+        if not df.empty:
+            data = df.to_dict(orient='records')
 
-        # Log schedule update
-        self.log.info('Updating schedule.')
+            # Log schedule update
+            self.log.info('Updating schedule.')
 
-        # Update each game in the database
-        for d in data:
-            ff.db.games.update_one({'_id': d['_id']},
-                                   {'$set': d})
+            # Update each game in the database
+            for d in data:
+                ff.db.games.update_one({'_id': d['_id']},
+                                       {'$set': d})
 
         return df
 
@@ -244,10 +248,13 @@ class Game:
         ''' Retreives JSON data for a game
         '''
         # Return XML if response was successful
-        r = requests.get(self.url)
-        if r.status_code == 200:
-            if len(r.text) > 50:
-                return json.loads(r.text)[self.info['eid']]
+        try:
+            r = requests.get(self.url)
+            if r.status_code == 200:
+                if len(r.text) > 50:
+                    return json.loads(r.text)[self.info['eid']]
+        except:
+            return None
 
     def _parse_feed(self):
         ''' Parses the JSON feed plays and returns a data frame
