@@ -379,7 +379,6 @@ class Collector:
 
             if r['status'] == 'live' or r['status'] == 'starting':
                 info = ff.gc.Game(r['gameid']).info
-                self.log.info('Game %s is %s' % (r['gameid'], r['status']))
 
                 # Check if game is not already updating
                 if 'updating' not in info.keys():
