@@ -289,7 +289,7 @@ class Game:
 
                     df = df.append(pd.Series(plays[p]), ignore_index=True)
 
-            return df
+        return df
 
     def _update(self):
         ''' Updates the play information for a game
@@ -432,6 +432,11 @@ class Collector:
                     # Update game plays and current time
                     now = datetime.utcnow()
                     game._update()
+
+                    # Stop monitoring if game status is final
+                    game = ff.gc.Game(gameid)
+                    if game.info['status'] == 'F':
+                        break
 
             # Notify if game info not found for game id
             self.log.error('Could not retrieve game information for %s.' %
