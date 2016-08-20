@@ -179,11 +179,15 @@ class Schedule:
             # Check to see if game is already in database
             result = ff.db.games.find_one({'_id': d['_id']})
             if not result:
-                # Insert game into database
-                ff.db.games.insert_one(d)
+                try:
+                    # Insert game into database
+                    ff.db.games.insert_one(d)
 
-                # Log schedule update
-                self.log.info('Inserting game %s to the database.' % d['_id'])
+                    # Log schedule update
+                    self.log.info('Inserting game %s to the database.' %
+                                  d['_id'])
+                except:
+                    pass
 
     def _update(self):
         ''' Adds game updates to database and returns updated
@@ -199,8 +203,11 @@ class Schedule:
 
             # Update each game in the database
             for d in data:
-                ff.db.games.update_one({'_id': d['_id']},
-                                       {'$set': d})
+                try:
+                    ff.db.games.update_one({'_id': d['_id']},
+                                           {'$set': d})
+                except:
+                    pass
 
         return df
 
@@ -306,13 +313,18 @@ class Game:
                 # Check to see if play is in the database
                 result = ff.db.plays.find_one({'_id': play['_id']})
                 if not result:
-                    ff.db.plays.insert_one(play)
+                    try:
+                        ff.db.plays.insert_one(play)
 
-                    self.log.info('Adding play %s to the database for game %s.'
-                                  ' [%s: %s | %s: %s].' %
-                                  (play['playid'], play['gameid'],
-                                   self.info['hometeam'], play['homescore'],
-                                   self.info['awayteam'], play['awayscore']))
+                        self.log.info('Adding play %s to the database '
+                                      'for game %s. [%s: %s | %s: %s].' %
+                                      (play['playid'], play['gameid'],
+                                       self.info['hometeam'],
+                                       play['homescore'],
+                                       self.info['awayteam'],
+                                       play['awayscore']))
+                    except:
+                        pass
 
     def _pre_post_times(self, starttime):
         ''' Returns timedelta of pregame and postgame times
@@ -368,10 +380,11 @@ class Collector:
     def _pending(self):
         ''' Returns a data frame of pending games
         '''
-        df = self.schedule[self.schedule.status != 'F'].copy()
+        if not self.schedule.empty:
+            df = self.schedule[self.schedule.status != 'F'].copy()
 
-        # Determine game status
-        df['status'] = df.gameid.apply(lambda x: Game(x).status)
+            # Determine game status
+            df['status'] = df.gameid.apply(lambda x: Game(x).status)
 
         return df
 
@@ -381,23 +394,25 @@ class Collector:
         # Get pending games
         df = self._pending()
 
-        # Iterate through games
-        for i, r in df.iterrows():
+        if not df.empty:
+            # Iterate through games
+            for i, r in df.iterrows():
 
-            if r['status'] == 'live' or r['status'] == 'starting':
-                info = ff.gc.Game(r['gameid']).info
+                if r['status'] == 'live' or r['status'] == 'starting':
+                    info = ff.gc.Game(r['gameid']).info
 
-                # Check if game is not already updating
-                if 'updating' not in info.keys():
-                    subprocess.Popen(['python',
-                                      ff.sec.helper_path + 'monitor_game.py',
-                                      '--gameid',
-                                      r['gameid']],
-                                     stdin=None,
-                                     stdout=None,
-                                     stderr=None,
-                                     close_fds=True)
-        sys.exit(1)
+                    # Check if game is not already updating
+                    if 'updating' not in info.keys():
+                        subprocess.Popen(['python',
+                                          (ff.sec.helper_path +
+                                           'monitor_game.py'),
+                                          '--gameid',
+                                          r['gameid']],
+                                         stdin=None,
+                                         stdout=None,
+                                         stderr=None,
+                                         close_fds=True)
+            sys.exit(1)
 
     def _monitor(self, gameid):
         ''' Monitors a game JSON feed to update plays
@@ -425,22 +440,26 @@ class Collector:
 
                 # Monitor until end of game
                 while now < end:
-
                     # Wait a random lognormal amount of seconds
                     time.sleep(np.random.lognormal(2, .5, 1)[0])
 
                     # Update game plays and current time
                     now = datetime.utcnow()
-                    game._update()
+
+                    # Try to update game plays
+                    try:
+                        game._update()
+                    except:
+                        pass
 
                     # Stop monitoring if game status is final
                     game = ff.gc.Game(gameid)
                     if game.info['status'] == 'F':
                         break
-
-            # Notify if game info not found for game id
-            self.log.error('Could not retrieve game information for %s.' %
-                           gameid)
+            else:
+                # Notify if game info not found for game id
+                self.log.error('Could not retrieve game information for %s.' %
+                               gameid)
 
         except:
             self.log.error('Unknown error: %s line %s: %s' %
