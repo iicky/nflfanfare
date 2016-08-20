@@ -342,10 +342,10 @@ class Game:
             elif start < now and post > now:
                 return "live"
             # Game starting (within 15 minutes)
-            elif start > now and pre < starting:
+            elif start > now and start < starting:
                 return "starting"
             # Upcoming game (within 1 hour)
-            elif start > now and pre < upcoming:
+            elif start > now and start < upcoming:
                 return "upcoming"
             # Pending game (> 1 hour away)
             elif start > datetime.now():
