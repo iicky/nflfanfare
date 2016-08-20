@@ -455,6 +455,7 @@ class Collector:
                     # Stop monitoring if game status is final
                     game = ff.gc.Game(gameid)
                     if game.info['status'] == 'F':
+                        self.log.info('Game %s has ended.' % gameid)
                         break
             else:
                 # Notify if game info not found for game id
