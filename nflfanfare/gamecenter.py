@@ -456,6 +456,14 @@ class Collector:
                     game = ff.gc.Game(gameid)
                     if game.info['status'] == 'F':
                         self.log.info('Game %s has ended.' % gameid)
+
+                        # Set end time of game
+                        now = datetime.utcnow()
+                        ended = pytz.timezone('UTC').localize(now)
+                        ff.db.games.update_one(
+                            {'_id': gameid},
+                            {'$set': {'ended': ended}})
+
                         break
             else:
                 # Notify if game info not found for game id
