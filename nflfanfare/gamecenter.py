@@ -133,13 +133,16 @@ class Schedule:
         for season_type in self.weeks.keys():
             for week in self.weeks[season_type]:
 
-                # Check to see week is already parsed
-                week_check = (last['seasontype'] == season_type and
-                              last['week'] < week)
+                if last:
+                    # Check to see week is already parsed
+                    week_check = (last['seasontype'] == season_type and
+                                  last['week'] < week)
 
-                # Check to see if last game is old and postseason
-                date_check = (season_type == 'POST' and
-                              last['scheduled'] < datetime.utcnow())
+                    # Check to see if last game is old and postseason
+                    date_check = (season_type == 'POST' and
+                                  last['scheduled'] < datetime.utcnow())
+                else:
+                    week_check, date_check = True, True
 
                 # Get week schedule and add if not empty
                 if (week_check or date_check):
@@ -172,7 +175,7 @@ class Schedule:
         '''
         # Converts schedule data frame to dictionary
         data = self._get_schedule(season).to_dict(orient='records')
-
+        print data
         # Insert each game into database
         for d in data:
 
@@ -216,7 +219,9 @@ class Schedule:
         '''
         result = ff.db.games.find().sort('scheduled',
                                          pymongo.DESCENDING).limit(1)
-        return list(result)[0]
+        if list(result):
+            return list(result)[0]
+        return None
 
 
 class Game:
