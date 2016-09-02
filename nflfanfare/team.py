@@ -6,20 +6,19 @@ import nflfanfare as ff
 
 
 class Team:
-    ''' Schedule class
+    ''' Class for handling team information
     '''
-
     def __init__(self):
         pass
 
-    def team_ids(self):
+    def _team_ids(self):
         ''' Returns NFL Team IDs as a list
         '''
-        return ff.db.teams.\
-            find({}, {'teamid': 1, '_id': 0}).\
-            distinct('teamid')
+        return sorted(ff.db.teams.
+                      find({}, {'teamid': 1, '_id': 0}).
+                      distinct('teamid'))
 
-    def team_hashtags(self, teamid):
+    def _team_hashtags(self, teamid):
         ''' Returns all hashtags for NFL team
         '''
         try:
@@ -27,7 +26,7 @@ class Team:
         except:
             return None
 
-    def rand_hashtag(self, teamid):
+    def _rand_hashtag(self, teamid):
         ''' Returns random hashtag for NFL team
         '''
         try:
@@ -36,7 +35,7 @@ class Team:
         except:
             return None
 
-    def teamid_from_name(self, teamname):
+    def _teamid_from_name(self, teamname):
         ''' Returns the team id from team full name
         '''
         try:
@@ -52,7 +51,7 @@ class Team:
         except:
             return None
 
-    def teamid_from_hashtag(self, hashtag):
+    def _teamid_from_hashtag(self, hashtag):
         ''' Returns the teamid for a hashtag
         '''
         try:
@@ -61,7 +60,7 @@ class Team:
         except:
             return None
 
-    def teamid_from_username(self, username):
+    def _teamid_from_username(self, username):
         ''' Returns the teamid for a username
         '''
         try:
@@ -69,7 +68,7 @@ class Team:
         except:
             return None
 
-    def username_from_teamid(self, teamid):
+    def _username_from_teamid(self, teamid):
         ''' Returns the username for a teamid
         '''
         try:
@@ -77,7 +76,7 @@ class Team:
         except:
             return None
 
-    def pfrid_from_teamid(self, teamid):
+    def _pfrid_from_teamid(self, teamid):
         ''' Returns the PFR ID from team id
         '''
         try:
@@ -85,7 +84,7 @@ class Team:
         except:
             return None
 
-    def teamid_from_pfrid(self, pfrid):
+    def _teamid_from_pfrid(self, pfrid):
         ''' Returns the team id from PFR ID
         '''
         try:
@@ -93,7 +92,7 @@ class Team:
         except:
             return None
 
-    def teams(self):
+    def _teams(self):
         ''' Returns teams as dataframe
         '''
         return pd.DataFrame(list(ff.db.teams.find({}, {'_id': 0})))
