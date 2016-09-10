@@ -78,6 +78,7 @@ class Team:
             column = 'df.teamname'
         # Hashtag
         if self.match in [_ for h in list(df.hashtags) for _ in h]:
+            # Convert hashtag lists in dataframe to string
             hashstr = df.hashtags.apply(lambda x: ' '.join(x))
             return df[hashstr.str.contains(self.match)].\
                 to_dict(orient='records')[0]
