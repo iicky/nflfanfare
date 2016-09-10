@@ -52,7 +52,7 @@ class Team:
     def _info(self):
         ''' Returns a team info dictionary from the teams dataframe.
             Allows for matching by NFL ID, PFR ID, Twitter username,
-            and full team name, and team name.
+            and full team name, team name, and hashtag.
         '''
         # Data frame of all teams in database
         df = teams()
@@ -76,6 +76,11 @@ class Team:
         # Team name
         if self.match in list(df.teamname):
             column = 'df.teamname'
+        # Hashtag
+        if self.match in [_ for h in list(df.hashtags) for _ in h]:
+            hashstr = df.hashtags.apply(lambda x: ' '.join(x))
+            return df[hashstr.str.contains(self.match)].\
+                to_dict(orient='records')[0]
 
         # Return dictionary if match
         if column:
