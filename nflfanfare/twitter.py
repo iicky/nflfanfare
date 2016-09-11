@@ -1,36 +1,28 @@
-from bs4 import BeautifulSoup
 from datetime import datetime, timedelta
 import json
-import numpy as np
-import os
-import platform
-from pyvirtualdisplay import Display
+from nltk.sentiment.vader import SentimentIntensityAnalyzer
 import pytz
 import re
-from selenium import webdriver
-import sys
 import time
-import tzlocal
 from TwitterAPI import TwitterAPI, TwitterRestPager
-import urllib2
+import tzlocal
 
 import nflfanfare as ff
 
 
-class Twitter:
+class API:
     ''' Twitter API Handling
     '''
-
     def __init__(self):
         ''' Defines tweet properties from API
         '''
-        self.twi = TwitterAPI(
+        self.api = TwitterAPI(
             ff.sec.twitter_ckey, ff.sec.twitter_csec, auth_type='oAuth2')
 
-    def quota(self, request):
+    def _quota(self, request):
         ''' Returns quota information for API request
         '''
-        result = self.twi.request('application/rate_limit_status')
+        result = self.api.request('application/rate_limit_status')
         resources = json.loads(result.response._content)['resources']
 
         base = re.split('/', request)[1]
@@ -38,12 +30,15 @@ class Twitter:
 
         return quota
 
-    def search(self, search):
-        ''' Searches for term and returns tweets
+    def search(self, search, until=None):
+        ''' Searches for term and returns a list of tweets
             Waits if API quota has been met
         '''
-        result = self.twi.request(
-            'search/tweets', {'q': search, 'lang': 'en', 'count': 100})
+        result = self.api.request('search/tweets',
+                                  {'q': search,
+                                   'lang': 'en',
+                                   'count': 100,
+                                   'until': until})
         remaining = int(result.response.headers['x-rate-limit-remaining'])
         reset = float(result.response.headers['x-rate-limit-reset'])
 
@@ -53,567 +48,198 @@ class Twitter:
             print ("Quota reached for search/tweets. Waiting %s seconds."
                    % delta.total_seconds())
             time.sleep(delta.total_seconds())
-            result = self.twi.request('search/tweets' % int(tweetid))
-            return result
+            result = self.api.request('search/tweets' % int(tweetid))
+            return [Tweet(_, search=search) for _ in list(result)]
 
-        return result
+        return [Tweet(_, search=search) for _ in list(result)]
 
-    def searchid(self, tweetid):
-        ''' Returns a tweet by id as string
-            Waits if API quota has been met
+    def pager(self, search, start, end):
+        ''' Pages through the search API for tweets between the
+            start and end times
         '''
-        result = self.twi.request('statuses/show/:%d' % int(tweetid))
-        remaining = int(result.response.headers['x-rate-limit-remaining'])
-        reset = float(result.response.headers['x-rate-limit-reset'])
-
-        # Finds the time until quota reset and sleeps
-        if remaining == 0:
-            delta = datetime.fromtimestamp(reset) - datetime.now()
-            print ("Quota reached for statuses/show/:id. Waiting %s seconds."
-                   % delta.total_seconds())
-            time.sleep(delta.total_seconds())
-            result = self.twi.request('statuses/show/:%d' % int(tweetid))
-            return result
-
-        return result
-
-    def scrapeid(self, username, tweetid):
-        ''' Returns JSON object for scraped tweet by id
-        '''
-        try:
-            url = 'https://mobile.twitter.com/%s/status/%s' % (
-                username, tweetid)
-
-            if platform.system() == 'Linux':
-                display = Display(visible=0, size=(800, 600))
-                display.start()
-
-            # Open URL in Chrome driver
-            browser = webdriver.Firefox()
-            browser.get(url)
-            time.sleep(np.random.lognormal(1, .5, 1)[0])
-
-            # Get the source code for page
-            html = browser.page_source.encode("utf-8")
-            soup = BeautifulSoup(html, "html.parser")
-        except:
-            pass
-        finally:
-            # Clean up
-            browser.close()
-            browser.quit()
-            if platform.system() == 'Linux':
-                display.stop()
-
-        # Get json
-        try:
-            tjson = soup.find('script', {'id': 'init-data'}).text
-            result = json.loads(tjson)['state']['tweetDetail']['tweet']
-            return result
-        except:
-            return None
-
-    def in_db(self, tweetid):
-        ''' Returns true if tweet is in database
-        '''
-        if ff.db.tweets.find({'tweetid': tweetid}).count() > 0:
-            return True
-        else:
-            return False
-
-    def add_to_db(self, tweet, teamid, verbose=False, col='tweets'):
-        ''' Adds a tweet object to the database
-        '''
-        outtweet = {'tweetid': tweet.tweetid,
-                    'teamid': teamid,
-                    'gameid': ff.sched.gameid_from_team_and_time(
-                        teamid, tweet.postedtime),
-                    'language': tweet.language,
-                    'tweettext': tweet.tweettext,
-                    'hashtags': tweet.hashtags,
-                    'usermentions': tweet.usermentions,
-                    'postedtime': tweet.postedtime,
-                    'collectedtime': tweet.collectedtime,
-                    'source': tweet.source,
-                    'user': {'userid': tweet.userid,
-                             'username': tweet.username,
-                             'realname': tweet.realname,
-                             'userlocation': tweet.userlocation,
-                             'usertimezone': tweet.usertimezone,
-                             'userprofileimg': tweet.userprofileimg
-                             },
-                    'sentiment': {'sent_pos': tweet.sent_pos,
-                                  'sent_neg': tweet.sent_neg,
-                                  'sent_neu': tweet.sent_neu,
-                                  'sent_compound': tweet.sent_compound
-                                  }
-                    }
-
-        try:
-            if not self.in_db(tweet.tweetid):
-                if verbose:
-                    print ("%s/%s - Adding %s: ",
-                           " %s to database.") % (outtweet['gameid'],
-                                                  teamid,
-                                                  tweet.username,
-                                                  tweet.tweettext)
-
-                if col == 'tweets':
-                    result = ff.db.tweets.insert_one(outtweet)
-                    if result.acknowledged:
-                        update = self.update_tweet_counts(
-                            outtweet['gameid'], outtweet['teamid'])
-                elif col == 'teamtweets':
-                    result = ff.db.teamtweets.insert_one(outtweet)
-            else:
-                if verbose:
-                    print ("Tweet %s is already in the database."
-                           % tweet.tweetid)
-        except:
-            if verbose:
-                print "Could not add %s to database." % (tweet.tweetid)
-                print "Error:", sys.exc_info()
-
-    def start_end_times(self, start, end):
-        ''' Converts start and end times for a game
-        '''
-        if not type(start) == datetime:
-
-            start = datetime.strptime(start, "%Y-%m-%d %H:%M:%S")
-            end = datetime.strptime(end, "%Y-%m-%d %H:%M:%S")
-
-        start = pytz.timezone('UTC').localize(start)
-        end = pytz.timezone('UTC').localize(end)
-
-        # Convert to local timezone
-        local = tzlocal.get_localzone()
-        start = start.astimezone(local)
-        end = end.astimezone(local)
-
-        # Make timestamp
-        start = int(time.mktime(start.timetuple()))
-        end = int(time.mktime(end.timetuple()))
-
-        return start, end
-
-    def search_url(self, search, start, end, live=True):
-        ''' Returns mobile Twitter search URL
-        '''
-        mod = '' if not live else 'f=tweets&'
-
-        # Generate url queries
-        url = 'http://mobile.twitter.com/search'
-        url += '?%svertical=default' % mod
-        url += '&q="%s"%%20lang%%3Aen%%20' % search
-        url += 'since%%3A%s%%20' % start
-        url += 'until%%3A%s&src=typd' % end
-
-        return url
-
-    def timeline_url(self, username, start, end):
-        ''' Returns mobile Twitter user timeline URL
-        '''
-        url = 'https://mobile.twitter.com/search'
-        url += '?q=lang%%3Aen%%20from%%3A%s%%20' % username
-        url += 'since%%3A%s%%20' % start
-        url += 'until%%3A%s&src=typd' % end
-
-        return url
-
-    def search_historic(self, search, start, end, live=True, verbose=False):
-        ''' Finds historic tweets and adds them to the database
-        '''
-        # Get NFL teamid from hashtag
-        team = ff.team.teamid_from_hashtag(search)
-
-        # Clean up inputs
-        search = urllib2.quote(search, safe='')
-
-        start, end = self.start_end_times(start, end)
-
-        url = self.search_url(search, start, end, live)
-
-        try:
-            # Open url in browser
-            browser = webdriver.PhantomJS(
-                executable_path='/usr/local/bin/phantomjs',
-                service_log_path=os.path.devnull)
-            browser.get(url)
-
-            # Pretend to be a human
-            time.sleep(np.random.lognormal(1, .5, 1)[0])
-
-            i = 1
-            while True:
-
-                print ("Scraping page %s for %s... %s"
-                       % (i, urllib2.unquote(search), url))
-
-                # Get the source code for page
-                html = browser.page_source.encode("utf-8")
-                soup = BeautifulSoup(html, "html.parser")
-
-                # Scrape tweets on page
-                tweetids = soup.find_all('a', class_='last')
-
-                for tweetid in tweetids:
-                    tweetid = tweetid.attrs['href'].split('/')[3]
-                    if self.in_db(tweetid):
-                        if verbose:
-                            print ("Tweet %s has already been collected"
-                                   % tweetid)
-                        continue
-                    try:
-                        responses = self.searchid(tweetid)
-                        for response in responses:
-                            tweet = ff.tweet.Tweet(response)
-                            if not tweet.retweeted:
-                                self.add_to_db(tweet, team, verbose=verbose)
-                    except:
-                        if verbose:
-                            print ("Could not collect tweet %s."
-                                   % tweet.tweetid)
-                            print "Error:", sys.exc_info()
-                        pass
-
-                # Get the next page button and exit if does not exit
-                loadmore = browser.find_elements_by_xpath(
-                    "//a[contains(text(), ' Load older Tweets ')]")
-                if len(loadmore) == 0:
-                    print "End of results."
-                    break
-
-                # Click the button
-                button = loadmore[0]
-                time.sleep(np.random.lognormal(1, .5, 1)[0])
-                button.click()
-                i += 1
-        except:
-            pass
-        finally:
-            browser.close()
-            browser.quit()
-
-    def scrape_historic(self, search, start, end, live=True, verbose=False):
-        ''' Scrapes historic tweets and adds them to the database
-        '''
-        # Get NFL teamid from hashtag
-        team = ff.team.teamid_from_hashtag(search)
-
-        # Clean up inputs
-        search = urllib2.quote(search, safe='')
-
-        start, end = self.start_end_times(start, end)
-
-        url = self.search_url(search, start, end, live)
-
-        try:
-            # Open url in browser
-            browser = webdriver.PhantomJS(
-                executable_path='/usr/local/bin/phantomjs',
-                service_log_path=os.path.devnull)
-            browser.get(url)
-
-            # Pretend to be a human
-            time.sleep(np.random.lognormal(1, .5, 1)[0])
-
-            i = 1
-            while True:
-
-                print ("Scraping page %s for %s... %s"
-                       % (i, urllib2.unquote(search), url))
-
-                # Get the source code for page
-                html = browser.page_source.encode("utf-8")
-                soup = BeautifulSoup(html, "html.parser")
-
-                # Scrape tweets on page
-                tweetids = soup.find_all('a', class_='last')
-
-                for tweet in tweetids:
-                    tweet = tweet.attrs['href'].split('/')
-                    tweetid = tweet[3]
-                    username = tweet[1]
-                    if self.in_db(tweetid):
-                        if verbose:
-                            print ("Tweet %s has already been collected"
-                                   % tweetid)
-                        continue
-                    try:
-                        response = self.scrapeid(username, tweetid)
-                        tweet = ff.tweet.Scrape(response)
-                        if not tweet.retweeted:
-                            self.add_to_db(tweet, team, verbose=verbose)
-                    except:
-                        if verbose:
-                            print "Could not collect tweet %s." % (tweetid)
-                            print "Error:", sys.exc_info()
-                        pass
-
-                # Get the next page button and exit if does not exit
-                loadmore = browser.find_elements_by_xpath(
-                    "//a[contains(text(), ' Load older Tweets ')]")
-                if len(loadmore) == 0:
-                    print "End of results."
-                    break
-
-                # Click the button
-                button = loadmore[0]
-                time.sleep(np.random.lognormal(1, .5, 1)[0])
-                button.click()
-                i += 1
-        except:
-            pass
-        finally:
-            browser.close()
-            browser.quit()
-
-    def bulk_cell_to_dict(self, cell):
-        ''' Convert bulk scrape tweet cell to dictionary
-        '''
-        try:
-            tweetid = cell.find('div', {'class': 'Tweet'})
-            if tweetid is not None:
-                tweettext = cell.find('div', {'class': 'TweetText'}).text
-                entities = cell.find_all('span', {'class': 'TweetEntity'})
-                info = {
-                    'tweetid': tweetid.attrs['data-tweet-id'],
-                    'username':
-                        (cell.find('span', {'class': 'UserNames-screenName'})
-                         .text.lstrip('@')),
-                    'realname':
-                        (cell.find('b', {'class': 'UserNames-displayName'})
-                         .text),
-                    'userprofileimg':
-                        (cell.find('img', {'class': 'UserAvatar'})
-                         .attrs['src']),
-                    'tweettext': tweettext,
-                    'language':
-                        (cell.find('div', {'class': 'TweetText'})
-                         .attrs['lang']),
-                    'hashtags':
-                        (','.join([h.text.lstrip('#')
-                                   for h in entities if '#' in h.text])),
-                    'usermentions':
-                        (','.join([h.text.lstrip('@')
-                                   for h in entities if '@' in h.text])),
-                    'retweeted': True if 'RT ' in tweettext else False,
-                    'postedtime': (datetime.strptime(
-                                   cell.find('time')
-                                   .attrs['datetime'][:19],
-                                   '%Y-%m-%dT%H:%M:%S'))
-                }
-                return info
-            return None
-        except:
-            return None
-
-    def bulk_source(self, url):
-        ''' Returns source from url as soup for bulk scraping
-        '''
-        try:
-
-            if platform.system() == 'Linux':
-                display = Display(visible=0, size=(800, 600))
-                display.start()
-
-            browser = webdriver.Firefox()
-            browser.get(url)
-
-            # Infinite scrolling handling
-            height = browser.execute_script(
-                'return document.body.scrollHeight')
-            count = 0
-            while True:
-                time.sleep(np.random.lognormal(1, .5, 1)[0])
-                browser.execute_script(
-                    "window.scrollTo(0, document.body.scrollHeight);")
-                newheight = browser.execute_script(
-                    'return document.body.scrollHeight')
-                if newheight - height == 0:
-                    count += 1
-                    if count == 3:
-                        break
-                else:
-                    height = newheight
-                    count = 0
-
-            html = browser.page_source.encode("utf-8")
-            soup = BeautifulSoup(html, "html.parser")
-            return soup
-        except:
-            print "Could not scrape bulk source for URL"
-        finally:
-            browser.close()
-            browser.quit()
-            if platform.system() == 'Linux':
-                display.stop()
-
-    def bulk_historic(self, search, start, end, live=True, verbose=False):
-        ''' Scrapes historic tweets in bulk and adds them to the database
-        '''
-        # Get NFL teamid from hashtag
-        team = ff.team.teamid_from_hashtag(search)
-
-        # Clean up inputs
-        search = urllib2.quote(search, safe='')
-
-        start, end = self.start_end_times(start, end)
-
-        url = self.search_url(search, start, end, live)
-        print "Bulk scraping for %s... %s" % (urllib2.unquote(search), url)
-
-        soup = self.bulk_source(url)
-        cells = soup.find_all('div', {'role': 'gridcell'})
-        for cell in cells:
-            info = self.bulk_cell_to_dict(cell)
-            if info is not None:
-                if self.in_db(info['tweetid']):
-                    if verbose:
-                        print ("Tweet %s has already been collected"
-                               % info['tweetid'])
-                    continue
-                try:
-                    tweet = ff.tweet.Bulk(info)
-                    if not tweet.retweeted:
-                        self.add_to_db(tweet, team, verbose=verbose)
-                except:
-                    if verbose:
-                        print "Could not collect tweet %s." % (info['tweetid'])
-                        print "Error:", sys.exc_info()
-                    pass
-
-    def bulk_timeline_historic(self, username, start, end, verbose=False):
-        ''' Scrapes team timeline tweets in bulk and adds them to the database
-        '''
-        # Get NFL teamid from hashtag
-        team = ff.team.teamid_from_username(username)
-
-        # Clean up inputs
-        username = urllib2.quote(username, safe='')
-
-        start, end = self.start_end_times(start, end)
-
-        url = self.timeline_url(username, start, end)
-        print "Bulk scraping for %s... %s" % (urllib2.unquote(username), url)
-
-        soup = self.bulk_source(url)
-        cells = soup.find_all('div', {'role': 'gridcell'})
-        for cell in cells:
-            info = self.bulk_cell_to_dict(cell)
-            if info is not None:
-                if self.in_db(info['tweetid']):
-                    if verbose:
-                        print ("Tweet %s has already been collected"
-                               % info['tweetid'])
-                    continue
-                try:
-                    tweet = ff.tweet.Bulk(info)
-                    if not tweet.retweeted:
-                        self.add_to_db(tweet,
-                                       team,
-                                       verbose=verbose,
-                                       col='teamtweets')
-                except:
-                    if verbose:
-                        print "Could not collect tweet %s." % (info['tweetid'])
-                        print "Error:", sys.exc_info()
-                    pass
-
-    def search_recent(self, search, start, end, verbose=False):
-        ''' Pages through search API for tweets under 7 days old
-        '''
-
         if type(start) == datetime:
             # Convert to UTC timezone
             endaware = pytz.timezone('UTC').localize(end)
+            startaware = pytz.timezone('UTC').localize(start)
 
             # Convert to local timezone
             local = tzlocal.get_localzone()
+            startaware = startaware.astimezone(local)
             endaware = endaware.astimezone(local)
 
             # Make timestamp
+            startstamp = int(time.mktime(startaware.timetuple()))
             endstamp = int(time.mktime(endaware.timetuple()))
         else:
             start = time.strptime(start, "%Y-%m-%d %H:%M")
             end = time.strptime(end, "%Y-%m-%d %H:%M")
+            startstamp = int(time.mktime(start))
             endstamp = int(time.mktime(end))
 
-        # Get NFL teamid from hashtag
-        team = ff.team.teamid_from_hashtag(search)
-
-        result = TwitterRestPager(self.twi, 'search/tweets',
+        # Initalize the pager request
+        result = TwitterRestPager(self.api, 'search/tweets',
                                   {'q': search,
                                    'lang': 'en',
                                    'count': 100,
+                                   'since': str(startstamp),
                                    'until': str(endstamp)})
-        quota = self.quota('/search/tweets')
+        quota = self._quota('/search/tweets')
 
+        tweets = []
         for item in result.get_iterator():
 
+            # Check to see if item is tweet
             if 'text' in item:
-                tweet = ff.tweet.Tweet(item)
 
+                # Create tweet object
+                tweet = Tweet(item, search=search)
+
+                # Exclude retweets and tweets outside of pre and post game
                 if not tweet.retweeted:
-                    if tweet.postedtime > start and tweet.postedtime < end:
-                        self.add_to_db(tweet, team, verbose=verbose)
-                    elif tweet.postedtime < start:
-                        break
+                    if tweet.postedtime >= start and tweet.postedtime <= end:
+                        tweets.append(tweet)
 
+            # Check API quota
             elif 'message' in item and item['code'] == '88':
                 delta = datetime.fromtimestamp(quota['reset']) - datetime.now()
                 print ("Quota reached for search/tweets. Waiting %s seconds."
                        % delta.total_seconds())
                 time.sleep(delta.total_seconds())
 
-    def tweet_gameid(self, tweetid):
-        ''' Returns the game id for a tweet in database
+        return tweets
+
+
+class Tweet:
+    ''' Returns tweet object from API result
+    '''
+    def __init__(self, tweet, **kwargs):
+        ''' Defines tweet properties from API
         '''
-        tweet = ff.db.tweets.find_one({'tweetid': tweetid})
-        if tweet is not None:
+        # Source information
+        self._id = tweet['id']
+        self.tweetid = tweet['id']
+        self.source = 'api'
 
-            pre = tweet['postedtime'] - timedelta(hours=1)
-            post = tweet['postedtime'] + timedelta(hours=4)
+        # Team and search information
+        self.search = None
+        self.teamid = None
 
-            result = ff.db.games.find_one({
-                '$and': [
-                    {'$or': [{'hometeam': tweet['teamid']},
-                             {'awayteam': tweet['teamid']}
-                             ]},
-                    {'starttime': {'$gte': pre,
-                                   '$lt': post
-                                   }
-                     }
-                ]
-            })
-            if result is not None:
-                return result['gameid']
-        return None
+        # Keyword information
+        for key in kwargs.keys():
+            setattr(self, key, kwargs[key])
 
-    def update_tweet_counts(self, gameid, teamid):
-        ''' Updates tweet count for team and gameid
+        # Team information
+        if self.search:
+            self.teamid = ff.teams.Team(self.search).teamid
+
+        # Tweet information
+        self.tweettext = re.sub(r'\\|\"|\'', '', tweet['text'])
+        self.language = tweet['lang']
+        self.hashtags = ([h['text'] for h in tweet['entities']['hashtags']]
+                         if len(tweet['entities']['hashtags']) > 0
+                         else None)
+        self.usermentions = ([h['screen_name']
+                             for h in tweet['entities']['user_mentions']]
+                             if len(tweet['entities']['user_mentions']) > 0
+                             else None)
+        self.postedtime = datetime.strptime(
+            tweet['created_at'], '%a %b %d %H:%M:%S +0000 %Y')
+        self.collectedtime = datetime.utcnow()
+        self.retweeted = False if 'retweeted_status' not in tweet else True
+
+        # User information
+        self.user = self._user_info(tweet)
+
+        # Sentiment information
+        self.sentiment = self._sentiment(tweet)
+
+        # Game information
+        self.gameid = self._gameid()
+
+    def _user_info(self, tweet):
+        ''' Returns user information dictionary for a tweet
         '''
-        result = ff.db.games.find_one({'gameid': gameid})
+        return {
+            'userid': tweet['user']['id'],
+            'username': tweet['user']['screen_name'],
+            'realname': re.sub(r'\\|\"|\'', '',
+                               tweet['user']['name']),
+            'userlocation': (tweet['user']['location']
+                             if not tweet['user']['location'] == ''
+                             else None),
+            'usertimezone': tweet['user']['time_zone'],
+            'userprofileimg': tweet['user']['profile_image_url']
+        }
+
+    def _sentiment(self, tweet):
+        ''' Returns sentiment dictionary for a tweet
+        '''
+        sid = SentimentIntensityAnalyzer().polarity_scores(tweet['text'])
+
+        return {
+            'sent_pos': round(sid['pos'], 3),
+            'sent_neg':  round(sid['neg'], 3),
+            'sent_neu':  round(sid['neu'], 3),
+            'sent_compound':  round(sid['compound'], 3)
+        }
+
+    def _in_db(self):
+        ''' Returns true if tweet is in database
+        '''
+        if ff.db.tweets.find_one({'tweetid': self.tweetid}):
+            return True
+        else:
+            return False
+
+    def _gameid(self):
+        ''' Returns the gameid for a tweet based on posted time and teamid
+        '''
+        if self.teamid:
+            onehour = 60 * 60 * 1000
+            fourhours = 4 * onehour
+            result = ff.db.games.aggregate([
+                {'$project': {
+                    'gameid': '$gameid',
+                    'hometeam': '$hometeam',
+                    'awayteam': '$awayteam',
+                    'scheduled': '$scheduled',
+                    'start': {'$subtract': ['$scheduled', onehour]},
+                    'end': {'$add': ['$scheduled', fourhours]}
+                }
+                },
+                {'$match': {
+                    '$and': [
+                        {'$or': [{'hometeam': self.teamid},
+                                 {'awayteam': self.teamid}
+                                 ]},
+                        {'start': {'$lte': self.postedtime}},
+                        {'end': {'$gte': self.postedtime}}
+                    ]
+                }
+                }
+
+            ])
+
+            if result:
+                for r in result:
+                    if 'gameid' in r:
+                        return r['gameid']
+            return None
+
+    def _dict(self):
+        ''' Returns a dictionary for the tweet object
+        '''
+        return vars(self)
+
+    def _add_db(self):
+        ''' Adds the tweet to the database
+        '''
         try:
-            if teamid == result['hometeam']:
-                update = ff.db.games.update_one(
-                    {"gameid": gameid},
-                    {
-                        "$set": {
-                            'tweetcounts.hometeam': result['tweetcounts']['hometeam'] + 1,
-                            'tweetcounts.total': result['tweetcounts']['total'] + 1,
-                        }
-                    }
-                )
-            elif teamid == result['awayteam']:
-                update = ff.db.games.update_one(
-                    {"gameid": gameid},
-                    {
-                        "$set": {
-                            'tweetcounts.awayteam': result['tweetcounts']['awayteam'] + 1,
-                            'tweetcounts.total': result['tweetcounts']['total'] + 1,
-                        }
-                    }
-                )
+            # Skip if retweeted
+            if not self.retweeted:
+                # Check if tweet is in database
+                if not self._in_db():
+                    result = ff.db.tweets.insert_one(self._dict())
         except:
-            print "Could not update tweet counts for %s." % gameid
+            print "Could not add %s to database." % (self.tweetid)
+            print "Error:", sys.exc_info()

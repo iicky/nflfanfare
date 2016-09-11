@@ -4,15 +4,11 @@ import logging.config
 import os
 import yaml
 
-import nflfanfare.collector as col
 import nflfanfare.database as db
 import nflfanfare.gamecenter as gc
-#import nflfanfare.plays as plays
-#import nflfanfare.schedule as sched
+import nflfanfare.games as games
 import nflfanfare.secrets as sec
-#import nflfanfare.statistics as stats
 import nflfanfare.teams as teams
-import nflfanfare.tweet as tweet
 import nflfanfare.twitter as twitter
 
 
@@ -25,7 +21,6 @@ with open(path + '/logger.yaml', 'rt') as f:
     config = yaml.safe_load(f.read())
 logging.config.dictConfig(config)
 
-col = col.Collector()
 db = db.DB()
 #plays = plays.Plays()
 #sched = sched.Schedule()
