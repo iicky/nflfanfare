@@ -90,3 +90,5 @@ nflfanfare.log
 logger.conf
 
 *.log
+
+*.bson

@@ -61,7 +61,7 @@ class API:
             # Exclude retweets and tweets without a gameid
             if not tweet.retweeted:
                 if tweet.gameid:
-                        tweet._add_db()
+                    if tweet._add_db():
                         added += 1
 
         # Return statistics
@@ -115,8 +115,8 @@ class API:
                 # Exclude retweets and tweets outside of pre and post game
                 if not tweet.retweeted:
                     if tweet.postedtime >= start and tweet.postedtime <= end:
-                        tweet._add_db()
-                        added += 1
+                        if tweet._add_db():
+                            added += 1
 
                 total += 1
 
@@ -150,10 +150,9 @@ class Collector:
         '''
         games = ff.games.games('recent')
         for game in games.gameid:
-            print game
             self.collect_game(game)
 
-    def collet_live(self):
+    def collect_live(self):
         ''' Collects tweets from recent games using the API pager.
             The API pager can collect tweets up to 7 days old.
         '''
@@ -175,9 +174,11 @@ class Collector:
         # Log schedule update
         self.log.info('Starting tweet collection for game %s.' % gameid)
 
+        # Collection process for recent game
         if game.state == 'recent':
 
             for hashtag in hashtags:
+
                 # Search for hashtag tweets
                 result = self.api.pager(hashtag, game.pregame, game.postgame)
 
@@ -187,6 +188,7 @@ class Collector:
                                result['total'],
                                result['search']))
 
+        # Collection process for live or upcoming games
         if game.state in ['upcoming', 'starting', 'live']:
             now = datetime.utcnow()
             end = game.scheduled + timedelta(hours=4)
@@ -194,19 +196,22 @@ class Collector:
             # Monitor until end of game
             while now < end:
 
-                # Wait a random lognormal amount of seconds
-                time.sleep(np.random.lognormal(2, .5, 1)[0])
+                try:
+                    # Wait a random lognormal amount of seconds
+                    time.sleep(np.random.lognormal(2, .5, 1)[0])
 
-                hashtag = random.choice(hashtags)
+                    hashtag = random.choice(hashtags)
 
-                # Wait a random lognormal amount of seconds
-                result = self.api.search(hashtag)
+                    # Wait a random lognormal amount of seconds
+                    result = self.api.search(hashtag)
 
-                # Log schedule update
-                print ('Added %s of %s tweets to the database for %s.' %
-                       (result['added'],
-                        result['total'],
-                        result['search']))
+                    # Log schedule update
+                    print ('Added %s of %s tweets to the database for %s.' %
+                           (result['added'],
+                            result['total'],
+                            result['search']))
+                except:
+                    pass
 
 
 class Tweet:
@@ -340,6 +345,8 @@ class Tweet:
                 # Check if tweet is in database
                 if not self._in_db():
                     result = ff.db.tweets.insert_one(self._dict())
+                    return True
+            return False
         except:
             print "Could not add %s to database." % (self.tweetid)
             print "Error:", sys.exc_info()
