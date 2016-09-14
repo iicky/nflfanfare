@@ -92,3 +92,7 @@ logger.conf
 *.log
 
 *.bson
+
+*.json
+
+*.old
