@@ -80,6 +80,8 @@ class Game:
 
             self.state = _state(self.scheduled)
 
+            self.hometweets, self.awaytweets = self._tweet_count()
+
     def _info(self):
         ''' Returns a game info dictionary from the database.
             Allows for matching by gameid or EID.
@@ -96,3 +98,26 @@ class Game:
             result = ff.db.games.find_one({query: self.match})
             return result
         return None
+
+    def _tweet_count(self):
+        ''' Returns the number of tweets in the database for
+            each team.
+        '''
+        # Aggregate database search for gameid and count
+        # the tweets grouped by teamid
+        tweets = ff.db.tweets.aggregate([
+                {'$match':
+                    {'gameid': self.gameid}},
+                {'$group':
+                    {'_id': '$teamid',
+                     'count': {'$sum': 1}}}])
+
+        hometweets, awaytweets = 0, 0
+
+        # Check to see if game has tweets and update count
+        if tweets:
+            df = pd.DataFrame(list(tweets))
+            hometweets = int(df[df._id == self.hometeam]['count'])
+            awaytweets = int(df[df._id == self.awayteam]['count'])
+
+        return hometweets, awaytweets
