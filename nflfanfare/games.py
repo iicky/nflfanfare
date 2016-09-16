@@ -115,7 +115,7 @@ class Game:
         hometweets, awaytweets = 0, 0
 
         # Check to see if game has tweets and update count
-        if tweets:
+        if list(tweets):
             df = pd.DataFrame(list(tweets))
             hometweets = int(df[df._id == self.hometeam]['count'])
             awaytweets = int(df[df._id == self.awayteam]['count'])
