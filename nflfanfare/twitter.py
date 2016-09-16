@@ -6,6 +6,7 @@ import numpy as np
 import pytz
 import random
 import re
+import subprocess
 import time
 from TwitterAPI import TwitterAPI, TwitterRestPager
 import tzlocal
@@ -153,10 +154,28 @@ class Collector:
             self.collect_game(game)
 
     def collect_live(self):
-        ''' Collects tweets from recent games using the API pager.
-            The API pager can collect tweets up to 7 days old.
+        ''' Collects tweets from live games using the API search.
+            Spawns a helper Python script to monitor the live game.
         '''
+        # Get pending games
         games = ff.games.games(['upcoming', 'starting', 'live'])
+
+        if not games.empty:
+            # Iterate through games
+            for game in games.gameid:
+
+                # Check if game is not already updating
+                if 'updating' not in info.keys():
+                    subprocess.Popen(['python',
+                                      (ff.sec.helper_path +
+                                       'monitor_tweets.py'),
+                                      '--gameid',
+                                      r['gameid']],
+                                     stdin=None,
+                                     stdout=None,
+                                     stderr=None,
+                                     close_fds=True)
+            sys.exit(1)
 
     def collect_game(self, gameid):
         ''' Collects tweets for a game
@@ -168,6 +187,8 @@ class Collector:
         '''
         # Game information
         game = ff.games.Game(gameid)
+
+        game.state = 'live'
 
         # Teams information
         hometeam = ff.teams.Team(game.hometeam)
@@ -205,25 +226,45 @@ class Collector:
             # Teams hashtag pool
             hashtags = hometeam.hashtags + awayteam.hashtags
 
-            # Monitor until end of game
-            while now < end:
+            try:
+                # Mark game as being scraped
+                ff.db.games.update_one({'_id': game.gameid},
+                                       {'$set': {'twitter': True}})
+                self.log.info('Starting tweet collection for game %s.'
+                              % game.gameid)
 
-                try:
-                    # Wait a random lognormal amount of seconds
-                    time.sleep(np.random.lognormal(2, .5, 1)[0])
+                time.sleep(20)
+                # Monitor until end of game
+                while now < end:
 
-                    hashtag = random.choice(hashtags)
+                    try:
+                        # Wait a random lognormal amount of seconds
+                        time.sleep(np.random.lognormal(2, .5, 1)[0])
 
-                    # Wait a random lognormal amount of seconds
-                    result = self.api.search(hashtag)
+                        # Choose and API search a random hashtag
+                        hashtag = random.choice(hashtags)
+                        result = self.api.search(hashtag)
 
-                    # Log schedule update
-                    print ('Added %s of %s tweets to the database for %s.' %
-                           (result['added'],
-                            result['total'],
-                            result['search']))
-                except:
-                    pass
+                        # Log collection update
+                        print ('Added %s of %s tweets to the '
+                               'database for %s.' % (result['added'],
+                                                     result['total'],
+                                                     result['search']))
+                    except:
+                        pass
+
+            except:
+                self.log.error('Unknown error: %s line %s: %s' %
+                               (sys.exc_info()[0],
+                                sys.exc_info()[2].tb_lineno,
+                                sys.exc_info()[1]))
+
+            finally:
+                # Mark game as finished
+                ff.db.games.update_one({'_id': gameid},
+                                       {'$unset': {'twitter': ''}})
+                self.log.info('Stopping tweet collection for game %s.'
+                              % gameid)
 
 
 class Tweet:
