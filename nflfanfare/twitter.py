@@ -160,6 +160,11 @@ class Collector:
 
     def collect_game(self, gameid):
         ''' Collects tweets for a game
+            Determines if a game is recent or live.
+            Uses the API pager for recent games and the API search
+            for upcoming, starting, or live games.
+            Recent collection of tweets skips colletion for any team
+            that has more than 8000 in the database.
         '''
         # Game information
         game = ff.games.Game(gameid)
@@ -168,14 +173,18 @@ class Collector:
         hometeam = ff.teams.Team(game.hometeam)
         awayteam = ff.teams.Team(game.awayteam)
 
-        # Teams hashtag pool
-        hashtags = hometeam.hashtags + awayteam.hashtags
-
         # Log schedule update
         self.log.info('Starting tweet collection for game %s.' % gameid)
 
         # Collection process for recent game
         if game.state == 'recent':
+
+            # Teams hashtag pool
+            hashtags = []
+            if game.hometweets < 8000:
+                hashtags += hometeam.hashtags
+            if game.awaytweets < 8000:
+                hashtags += awayteam.hashtags
 
             for hashtag in hashtags:
 
@@ -192,6 +201,9 @@ class Collector:
         if game.state in ['upcoming', 'starting', 'live']:
             now = datetime.utcnow()
             end = game.scheduled + timedelta(hours=4)
+
+            # Teams hashtag pool
+            hashtags = hometeam.hashtags + awayteam.hashtags
 
             # Monitor until end of game
             while now < end:
