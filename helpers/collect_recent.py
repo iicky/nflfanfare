@@ -7,16 +7,6 @@ if not path in sys.path:
     sys.path.insert(1, path)
 del path
 
-import nflfanfare as ff
+from nflfanfare import twitter
 
-games = ff.sched.all_games()
-
-for g in games.gameid:
-	status = ff.sched.game_status(g)
-	if status == "recent":
-		if ff.sched.game_tweet_counts(g)['total'] < 10000:
-			try:
-				ff.col.collect_recent(g, verbose=True)
-			except:
-				pass
-		
+twitter.Collector().collect_recent()
