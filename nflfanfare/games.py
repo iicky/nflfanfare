@@ -112,11 +112,12 @@ class Game:
                     {'_id': '$teamid',
                      'count': {'$sum': 1}}}])
 
+        tweets = list(tweets)
         hometweets, awaytweets = 0, 0
 
         # Check to see if game has tweets and update count
-        if list(tweets):
-            df = pd.DataFrame(list(tweets))
+        if tweets:
+            df = pd.DataFrame(tweets)
             hometweets = int(df[df._id == self.hometeam]['count'])
             awaytweets = int(df[df._id == self.awayteam]['count'])
 
