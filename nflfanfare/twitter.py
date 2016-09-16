@@ -7,6 +7,7 @@ import pytz
 import random
 import re
 import subprocess
+import sys
 import time
 from TwitterAPI import TwitterAPI, TwitterRestPager
 import tzlocal
@@ -157,20 +158,24 @@ class Collector:
         ''' Collects tweets from live games using the API search.
             Spawns a helper Python script to monitor the live game.
         '''
-        # Get pending games
+        # Get live, starting, or upcoming games
         games = ff.games.games(['upcoming', 'starting', 'live'])
 
+        # Find list of games that are already being monitored
+        locked = ff.db.games.find({'twitter': {'$exists': True}}, {'_id': 1})
+        locked = [_['_id'] for _ in list(locked)]
+
         if not games.empty:
+
             # Iterate through games
             for game in games.gameid:
-
                 # Check if game is not already updating
-                if 'updating' not in info.keys():
+                if game not in locked:
                     subprocess.Popen(['python',
                                       (ff.sec.helper_path +
                                        'monitor_tweets.py'),
                                       '--gameid',
-                                      r['gameid']],
+                                      game],
                                      stdin=None,
                                      stdout=None,
                                      stderr=None,
@@ -187,8 +192,6 @@ class Collector:
         '''
         # Game information
         game = ff.games.Game(gameid)
-
-        game.state = 'live'
 
         # Teams information
         hometeam = ff.teams.Team(game.hometeam)
@@ -233,7 +236,6 @@ class Collector:
                 self.log.info('Starting tweet collection for game %s.'
                               % game.gameid)
 
-                time.sleep(20)
                 # Monitor until end of game
                 while now < end:
 
