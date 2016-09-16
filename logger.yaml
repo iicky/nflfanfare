@@ -35,6 +35,12 @@ loggers:
     formatter: default
     propagate: no
 
+  helpers.monitor_tweets:
+    level: INFO
+    handlers: [file]
+    formatter: default
+    propagate: no
+
   helpers.start_collector:
     level: INFO
     handlers: [file]
