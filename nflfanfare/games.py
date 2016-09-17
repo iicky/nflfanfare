@@ -78,9 +78,13 @@ class Game:
             self.pregame = self.scheduled - timedelta(hours=1)
             self.postgame = self.scheduled + timedelta(hours=4)
 
+            # Game state
             self.state = _state(self.scheduled)
 
+            # Tweet counts
             self.hometweets, self.awaytweets = self._tweet_count()
+
+            self.colors = self._colors()
 
     def _info(self):
         ''' Returns a game info dictionary from the database.
@@ -122,3 +126,29 @@ class Game:
             awaytweets = int(df[df._id == self.awayteam]['count'])
 
         return hometweets, awaytweets
+
+    def _colors(self):
+        ''' Determines the primary and secondary colors for the
+            home and away teams. Ensures that neither team has
+            overlapping colors. Priority is given to the hometeam.
+        '''
+        # Get colors list for each team
+        homecolors = ff.teams.Team(self.hometeam).colors
+        awaycolors = ff.teams.Team(self.awayteam).colors
+
+        # Primary color
+        home_pri = homecolors[0]
+        if home_pri == awaycolors[0]:
+            away_pri = awaycolors[1]
+        else:
+            away_pri = awaycolors[0]
+
+        # Secondary color
+        home_sec = homecolors[1]
+        if home_sec == awaycolors[1]:
+            away_sec = awaycolors[0]
+        else:
+            away_sec = awaycolors[1]
+
+        return {'home_pri': home_pri, 'home_sec': home_sec,
+                'away_pri': away_pri, 'away_sec': away_sec}
