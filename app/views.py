@@ -38,8 +38,11 @@ def game():
 
 @app.route('/gamesentiment', methods=['GET'])
 def gamesentiment():
+    # Parse gameid from get request
     gameid = request.args.get('gameid')
 
-    sent = stats.gametime_info(gameid)
+    # Sentiment data frame from gameid
+    sentiment = stats.Game(gameid)._sentiment()
 
-    return Markup(json.dumps(sent, default=json_util.default))
+    # Return sentiment markup
+    return sentiment.to_json(orient='records')
