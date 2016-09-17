@@ -8,6 +8,7 @@ import nflfanfare.database as db
 import nflfanfare.gamecenter as gc
 import nflfanfare.games as games
 import nflfanfare.secrets as sec
+import nflfanfare.statistics as stats
 import nflfanfare.teams as teams
 import nflfanfare.twitter as twitter
 

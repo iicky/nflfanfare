@@ -10,26 +10,31 @@ from nflfanfare import stats
 def home():
     return render_template("tweetcount.html")
 
+
 @app.route('/scroll')
 def scroll():
     return render_template("scrolltest.html")
 
+
 @app.route('/tweetcount')
 def tweetcount():
-    df = stats.game_tweet_counts()
+    df = stats.schedule()
     #return json.dumps(data, default=json_util.default)
     return df.to_json(orient='records')
+
 
 @app.route('/teaminfo')
 def teaminfo():
     df = stats.teams_list()
     return df.to_json(orient='records')
 
+
 @app.route('/game', methods=['GET'])
 def game():
     gameid = request.args.get('gameid')
     return render_template('scoreboard.html',
                             gameid=gameid)
+
 
 @app.route('/gamesentiment', methods=['GET'])
 def gamesentiment():

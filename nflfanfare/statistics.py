@@ -8,6 +8,52 @@ import tzlocal
 import nflfanfare as ff
 
 
+def schedule():
+    ''' Returns pandas dataframe of game info and tweet counts
+    '''
+    # Game information
+    result = ff.db.games.find({'seasontype': {'$ne': 'PRE'}}).\
+        sort([('gameid', pymongo.ASCENDING)])
+    games = pd.DataFrame(list(result))
+
+    # Tweet counts by game and team id
+    result = ff.db.tweets.find({}, {'gameid': 1, 'teamid': 1})
+    counts = pd.DataFrame(list(result))
+    counts = counts.groupby(['gameid', 'teamid']).agg({'_id': 'count'}).\
+        reset_index().rename(columns={'_id': 'tweets'})
+
+    # Function to match hometeam and awayteam tweet counts
+    # Method is much faster than an aggregation pipeline in MongoDB
+    def lookup(x, team):
+        result = counts[(counts.gameid == x['gameid']) &
+                        (counts.teamid == x[team])].tweets
+        if result.empty:
+            return 0
+        return int(result)
+
+    # Look up hometeam and awayteam tweet counts
+    games['hometweets'] = games.apply(lambda x: lookup(x, 'hometeam'), axis=1)
+    games['awaytweets'] = games.apply(lambda x: lookup(x, 'awayteam'), axis=1)
+    games['totaltweets'] = games.hometweets + games.awaytweets
+
+    # Subset columns in dataframe
+    games = games[['gameid', 'week', 'seasontype', 'hometeam', 'awayteam',
+                   'scheduled', 'hometweets', 'awaytweets', 'totaltweets']]
+
+    games['state'] = games.scheduled.apply(ff.games._state)
+
+    # Convert to UTC then local timezone
+    local = tzlocal.get_localzone()
+    games['scheduled'] = games.scheduled.apply(
+         lambda d: pytz.timezone('UTC').localize(d)).astype(datetime)
+    games['scheduled'] = games.scheduled.apply(
+        lambda d: datetime.strftime(d.astimezone(local),
+                                    '%Y/%m/%d %I:%M%p %Z'))
+    games['scheduled'] = games.scheduled.astype(str)
+
+    return games
+
+
 class Game():
     ''' Class for calculating game statistics
         Initialized based on a gameid string.
