@@ -23,7 +23,3 @@ with open(path + '/logger.yaml', 'rt') as f:
 logging.config.dictConfig(config)
 
 db = db.DB()
-#plays = plays.Plays()
-#sched = sched.Schedule()
-#stats = stats.Statistics()
-# twitter = twitter.Twitter()
