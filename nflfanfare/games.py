@@ -89,8 +89,6 @@ class Game:
 
             # Update game info
             self.info = vars(self)
-            self.info.pop('info', None)
-
 
     def _info(self):
         ''' Returns a game info dictionary from the database.
