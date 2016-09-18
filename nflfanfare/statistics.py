@@ -186,3 +186,15 @@ class Game():
             df = df.where((pd.notnull(df)), None)
 
         return df
+
+    def data(self):
+        ''' Returns all statistical data for a game as a dictionary
+        '''
+        # Base game information
+        data = self.game.info
+
+        # Gametime sentiment
+        sentiment = self._sentiment().to_dict(orient='records')
+        data['sentiment'] = sentiment
+
+        return data
