@@ -21,6 +21,8 @@ def scroll():
 @app.route('/tweetcount', methods=['GET'])
 def tweetcount():
     week = request.args.get('week')
+    if week == 'None':
+        week = None
     df = stats.schedule(week)
     return df.to_json(orient='records')
 
