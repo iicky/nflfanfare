@@ -8,11 +8,15 @@ import tzlocal
 import nflfanfare as ff
 
 
-def schedule():
+def schedule(week=None):
     ''' Returns pandas dataframe of game info and tweet counts
     '''
     # Game information
-    result = ff.db.games.find({'seasontype': {'$ne': 'PRE'}}).\
+    search = {'seasontype': {'$ne': 'PRE'}}
+    if week:
+        search['week'] = str(week)
+
+    result = ff.db.games.find(search).\
         sort([('gameid', pymongo.ASCENDING)])
     games = pd.DataFrame(list(result))
 
@@ -192,6 +196,7 @@ class Game():
         '''
         # Base game information
         data = self.game.info
+        data.pop('info', None)
 
         # Gametime sentiment
         sentiment = self._sentiment().to_dict(orient='records')
