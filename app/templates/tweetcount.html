@@ -5,7 +5,7 @@
 
   <body>
     <h3 id="loading">Loading</h3>
-   
+
     <table id="demo">
       <thead></thead>
       <tbody></tbody>
@@ -18,7 +18,7 @@
 
 var data;
 
-$.getJSON("tweetcount", function(d) {
+$.getJSON("tweetcount?week={{week}}", function(d) {
 	data = d;
 	$("#loading").hide();
 
@@ -36,22 +36,22 @@ function refreshTable(sortOn){
 	// table header
 	var thead = d3.select("thead").selectAll("th")
 		.data(d3.keys(data[0]))
-		.enter().append("th").text(function(d){ 
+		.enter().append("th").text(function(d){
 			return d.charAt(0).toUpperCase() + d.slice(1); })
 		.on("click", function(d){ return refreshTable(d); });
-		
+
 	// create rows
-	var tr = d3.select("tbody").selectAll("tr").data(data);	
+	var tr = d3.select("tbody").selectAll("tr").data(data);
 	tr.enter().append("tr");
 
 	// populate cells
-	var td = tr.selectAll("td").data(function(d){return d3.values(d);});	
+	var td = tr.selectAll("td").data(function(d){return d3.values(d);});
 	td.enter().append("td")
 		.attr("align", "center")
 		.text(function(d) {return d;});
-	
+
 	//update?
-	if(sortOn !== null) {			
+	if(sortOn !== null) {
 			// update rows
 			if(sortOn != previousSort){
 				tr.sort(function(a,b){return sort(a[sortOn], b[sortOn]);});
@@ -61,7 +61,7 @@ function refreshTable(sortOn){
 				tr.sort(function(a,b){return sort(b[sortOn], a[sortOn]);});
 				previousSort = null;
 			}
-			
+
 			//update cells
 			td.text(function(d) {return d;});
 	}
@@ -75,7 +75,7 @@ function sort(a,b){
 			var timeB = format.parse(b).getTime();
 			return timeA > timeB ? 1 : timeA == timeB ? 0 : -1;
 		}
-		else 
+		else
 			return a.localeCompare(b);
 	}
 	else if(typeof a == "number"){

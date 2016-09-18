@@ -6,9 +6,11 @@ import pandas as pd
 
 from nflfanfare import stats
 
-@app.route('/')
+
+@app.route('/', methods=['GET'])
 def home():
-    return render_template("tweetcount.html")
+    week = request.args.get('week')
+    return render_template("tweetcount.html", week=week)
 
 
 @app.route('/scroll')
@@ -16,10 +18,10 @@ def scroll():
     return render_template("scrolltest.html")
 
 
-@app.route('/tweetcount')
+@app.route('/tweetcount', methods=['GET'])
 def tweetcount():
-    df = stats.schedule()
-    #return json.dumps(data, default=json_util.default)
+    week = request.args.get('week')
+    df = stats.schedule(week)
     return df.to_json(orient='records')
 
 
@@ -33,16 +35,15 @@ def teaminfo():
 def game():
     gameid = request.args.get('gameid')
     return render_template('scoreboard.html',
-                            gameid=gameid)
+                           gameid=gameid)
 
-
-@app.route('/gamesentiment', methods=['GET'])
-def gamesentiment():
+@app.route('/gamedata', methods=['GET'])
+def gamedata():
     # Parse gameid from get request
     gameid = request.args.get('gameid')
 
     # Sentiment data frame from gameid
-    sentiment = stats.Game(gameid)._sentiment()
+    data = stats.Game(gameid).data()
 
     # Return sentiment markup
-    return sentiment.to_json(orient='records')
+    return json.dumps(data, default=json_util.default)
