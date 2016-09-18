@@ -84,7 +84,13 @@ class Game:
             # Tweet counts
             self.hometweets, self.awaytweets = self._tweet_count()
 
+            # Home and away team colors
             self.colors = self._colors()
+
+            # Update game info
+            self.info = vars(self)
+            self.info.pop('info', None)
+
 
     def _info(self):
         ''' Returns a game info dictionary from the database.
