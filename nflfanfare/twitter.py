@@ -233,11 +233,12 @@ class Collector:
                 # Mark game as being scraped
                 ff.db.games.update_one({'_id': game.gameid},
                                        {'$set': {'twitter': True}})
-                self.log.info('Starting tweet collection for game %s.'
-                              % game.gameid)
 
                 # Monitor until end of game
-                while now < end:
+                while now <= end:
+
+                    # Update now time
+                    now = datetime.utcnow()
 
                     try:
                         # Wait a random lognormal amount of seconds
@@ -248,10 +249,10 @@ class Collector:
                         result = self.api.search(hashtag)
 
                         # Log collection update
-                        print ('Added %s of %s tweets to the '
-                               'database for %s.' % (result['added'],
-                                                     result['total'],
-                                                     result['search']))
+                        self.log.info('Added %s of %s tweets to the '
+                                      'database for %s.' % (result['added'],
+                                                            result['total'],
+                                                            result['search']))
                     except:
                         pass
 
