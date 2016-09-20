@@ -55,6 +55,9 @@ def schedule(week=None):
                                     '%Y/%m/%d %I:%M%p %Z'))
     games['scheduled'] = games.scheduled.astype(str)
 
+    # Pretty column names
+    games.rename(columns={'gameid': 'Game ID'}, inplace=True)
+
     return games
 
 
@@ -80,6 +83,9 @@ class Game():
             self.tweets = self._timeseries(self.tweets,
                                            tweet_buckets,
                                            'postedtime')
+
+            # Game plays
+            self.plays = ff.plays.Plays(self.gameid)
 
     def _tweets(self):
         ''' Returns a dataframe containing the game tweets
@@ -201,5 +207,8 @@ class Game():
         # Gametime sentiment
         sentiment = self._sentiment().to_dict(orient='records')
         data['sentiment'] = sentiment
+
+        # Game plays
+        data['plays'] = self.plays.plays.to_dict(orient='records')
 
         return data

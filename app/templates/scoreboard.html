@@ -130,7 +130,7 @@
 var gameid = {{gameid}};
 var data;
 
-$.getJSON("gamesentiment?gameid="+gameid, function(d) {
+$.getJSON("gamedata?gameid="+gameid, function(d) {
 
 		data = d;
 		initScoreboard(d);

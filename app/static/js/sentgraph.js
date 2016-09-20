@@ -26,7 +26,8 @@ function drawSentGraph(d){
     var y = d3.scale.linear().range([height, 0]);
 
     // Scale data
-    x.domain(d3.extent(data.gametime, function(d) { return d.time.$date; }));
+    x.domain(d3.extent(data.sentiment,
+                       function(d) { return d.gametime.$date; }));
     y.domain([-1, 1]);
 
     var xAxis = d3.svg.axis().scale(x).ticks(0)
@@ -65,34 +66,34 @@ function drawSentGraph(d){
     //------------------------------------------
     // Team sentiment line definitions
     var homeline = d3.svg.line()
-        .x(function(d) { return x(d.time.$date); })
+        .x(function(d) { return x(d.gametime.$date); })
         .y(function(d) { return y(d.homesentiment); });
 
     var awayline = d3.svg.line()
-        .x(function(d) { return x(d.time.$date); })
+        .x(function(d) { return x(d.gametime.$date); })
         .y(function(d) { return y(d.awaysentiment); });
 
     // Home team lines
     svg.append("path")
        .attr("class", "boardteamlinepri")
-       .attr("stroke", '#' + data.homecolorpri)
-       .attr("d", homeline(data.gametime));
+       .attr("stroke", '#' + data.colors.home_pri)
+       .attr("d", homeline(data.sentiment));
 
     svg.append("path")
        .attr("class", "boardteamlinesec")
-       .attr("stroke", '#' + data.homecolorsec)
-       .attr("d", homeline(data.gametime));
+       .attr("stroke", '#' + data.colors.home_sec)
+       .attr("d", homeline(data.sentiment));
 
     // Away team line
     svg.append("path")
        .attr("class", "boardteamlinepri")
-       .attr("stroke", '#' + data.awaycolorpri)
-       .attr("d", awayline(data.gametime));
+       .attr("stroke", '#' + data.colors.away_pri)
+       .attr("d", awayline(data.sentiment));
 
     svg.append("path")
        .attr("class", "boardteamlinesec")
-       .attr("stroke", '#' + data.awaycolorsec)
-       .attr("d", awayline(data.gametime));
+       .attr("stroke", '#' + data.colors.away_sec)
+       .attr("d", awayline(data.sentiment));
 
     //------------------------------------------
     // Focus definitions
@@ -133,7 +134,6 @@ function drawSentGraph(d){
              .attr("x", -1 * focuspad)
              .attr("y", focuslogoheight/2)
              .style("text-anchor", "end")
-             .text("NE")
 
     // Away team focus definitions
     var focusaway = focus.append("g")
@@ -153,7 +153,6 @@ function drawSentGraph(d){
              .attr("x", focuslogoheight + focuspad)
              .attr("y", focuslogoheight/2)
              .style("text-anchor", "start")
-             .text("PIT")
 
     // Focus overlay
     svg.append("rect")
@@ -169,10 +168,8 @@ function drawSentGraph(d){
     var boardawayscore = d3.select("#boardawayscore");
     var boardplay = d3.select("#boardplay");
 
-    var playindex = d3.bisector(function(d){ return d.predtime.$date }).right;
-    var sentindex = d3.bisector(function(d){ return d.time.$date }).right;
-
-    console.log(sentindex(data.gametime, data.starttime.$date));
+    var playindex = d3.bisector(function(d){ return d.collected_time.$date }).right;
+    var sentindex = d3.bisector(function(d){ return d.gametime.$date }).right;
 
     // Mouse move function
     function mousemove() {
@@ -180,7 +177,7 @@ function drawSentGraph(d){
         var xtime = x.invert(x0);
 
         var playi = playitem(xtime);
-        var senti = sentindex(data.gametime, Date.parse(xtime));
+        var senti = sentindex(data.sentiment, Date.parse(xtime));
 
         // Move focus line
         focus.attr("transform",
@@ -190,11 +187,10 @@ function drawSentGraph(d){
         boardtime.text(parseDate(xtime));
         boardhomescore.text(data.plays[playi].homescore);
         boardawayscore.text(data.plays[playi].awayscore);
-        //boardplay.text(prettyPlay(data.plays[playi].description));
 
         d3plus.textwrap()
               .container(d3.select("#boardplay"))
-              .text(prettyPlay(data.plays[playi].description))
+              .text(prettyPlay(data.plays[playi].desc))
               .draw();
 
         possession(playi);
@@ -211,12 +207,13 @@ function drawSentGraph(d){
 function playitem(xtime) {
 
     var len = data.plays.length;
-    var playindex = d3.bisector(function(d){ return d.predtime.$date }).right;
+    var playindex = d3.bisector(function(d){
+        return d.collected_time.$date }).right;
 
-    if (Date.parse(xtime) < data.starttime.$date) {
+    if (Date.parse(xtime) < data.scheduled.$date) {
         return 0;
     }
-    else if (Date.parse(xtime) > data.plays[len-1].predtime.$date) {
+    else if (Date.parse(xtime) > data.plays[len-1].collected_time.$date) {
         return len-1;
     }
     else if (playindex(data.plays, Date.parse(xtime)) === 'undefined') {
@@ -234,11 +231,11 @@ function possession(p) {
     var boardhomeposs = d3.select("#boardhomeposs");
     var boardawayposs = d3.select("#boardawayposs");
 
-    if (data.plays[p].team == data.hometeam){
+    if (data.plays[p].posteam == data.hometeam){
         boardhomeposs.attr("class", "boardpossessionon");
         boardawayposs.attr("class", "boardpossessionoff");
     }
-    else if (data.plays[p].team == data.awayteam){
+    else if (data.plays[p].posteam == data.awayteam){
         boardawayposs.attr("class", "boardpossessionon");
         boardhomeposs.attr("class", "boardpossessionoff");
     }
@@ -253,11 +250,11 @@ function possession(p) {
  */
 function quarter(p) {
     var boardquarter = d3.select("#boardquarter");
-    var qtr = data.plays[p].quarter;
+    var qtr = data.plays[p].qtr;
 
     if(typeof qtr === 'number'){
         var q = "Q" + qtr.toString();
-        var t = data.plays[p].gameclock;
+        var t = data.plays[p].time;
         boardquarter.text(q + " " + t);
     }
     else {
@@ -328,8 +325,8 @@ function sentiment(s) {
     var focushomesent = d3.select("#focushomesent");
     var focusawaysent = d3.select("#focusawaysent");
 
-    var hsent = data.gametime[s].homesentiment.toFixed(2);
-    var asent = data.gametime[s].awaysentiment.toFixed(2);
+    var hsent = data.sentiment[s].homesentiment.toFixed(2);
+    var asent = data.sentiment[s].awaysentiment.toFixed(2);
     focushomesent.text(hsent);
     focusawaysent.text(asent);
 

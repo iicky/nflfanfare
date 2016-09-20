@@ -260,7 +260,7 @@ function initScoreboard(d){
         .attr("x", 0).attr("y", 0);
 
     time.append("text")
-        .text(parseDate(d.endtime.$date))
+        .text(parseDate(d.ended.$date))
         .attr("id", "boardtime")
         .attr("class", "boardtimetext")
         .attr("x", quarterwidth/2).attr("y", timeheight/2);
