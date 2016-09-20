@@ -24,6 +24,8 @@ class API:
         self.api = TwitterAPI(
             ff.sec.twitter_ckey, ff.sec.twitter_csec, auth_type='oAuth2')
 
+        self.log = logging.getLogger('twitter.API')
+
     def _quota(self, request):
         ''' Returns quota information for API request
         '''
@@ -53,8 +55,8 @@ class API:
         # Finds the time until quota reset and sleeps
         if remaining == 0:
             delta = datetime.fromtimestamp(reset) - datetime.now()
-            print ("Quota reached for search/tweets. Waiting %s seconds."
-                   % delta.total_seconds())
+            self.log.warn('Quota reached for search/tweets. '
+                          'Waiting %s seconds.' % delta.total_seconds())
             time.sleep(delta.total_seconds())
             result = self.api.request('search/tweets' % int(tweetid))
 
@@ -125,8 +127,8 @@ class API:
             # Check API quota
             elif 'message' in item and item['code'] == '88':
                 delta = datetime.fromtimestamp(quota['reset']) - datetime.now()
-                print ("Quota reached for search/tweets. Waiting %s seconds."
-                       % delta.total_seconds())
+                self.log.warn('Quota reached for search/tweets. '
+                              'Waiting %s seconds.' % delta.total_seconds())
                 time.sleep(delta.total_seconds())
 
         # Return statistics
@@ -404,5 +406,4 @@ class Tweet:
                     return True
             return False
         except:
-            print "Could not add %s to database." % (self.tweetid)
-            print "Error:", sys.exc_info()
+            pass

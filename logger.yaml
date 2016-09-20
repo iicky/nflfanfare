@@ -47,6 +47,12 @@ loggers:
     formatter: default
     propagate: no
 
+  twitter.API:
+    level: INFO
+    handlers: [file]
+    formatter: default
+    propagate: no
+
   twitter.Collector:
     level: INFO
     handlers: [file]
