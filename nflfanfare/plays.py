@@ -28,8 +28,8 @@ class Plays:
 
             # Jacksonvile fix
             fixcols = ['desc', 'posteam', 'yrdln']
-            if (self.game.hometeam == 'JAX'
-                or self.game.awayteam == 'JAX'):
+            if (self.game.hometeam == 'JAX' or
+                    self.game.awayteam == 'JAX'):
                 for fcol in fixcols:
                     df[fcol] = df[fcol].str.replace('JAC', 'JAX')
 
@@ -69,12 +69,12 @@ class Plays:
                 # Deduct home or away timeouts
                 if self.game.hometeam in to:
                     half.loc[half.index >= i,
-                            'hometimeouts'] = toleft
+                             'hometimeouts'] = toleft
                 if self.game.awayteam in to:
                     half.loc[half.index >= i,
-                            'awaytimeouts'] = toleft
+                             'awaytimeouts'] = toleft
 
             # Append half to game plays
             df = df.append(half)
-        
+
         return df
