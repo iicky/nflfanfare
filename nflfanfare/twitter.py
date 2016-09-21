@@ -218,10 +218,12 @@ class Collector:
                 result = self.api.pager(hashtag, game.pregame, game.postgame)
 
                 # Log tweet page update
-                self.log.info('Added %s of %s tweets to the database for %s.' %
+                self.log.info('Added %s of %s %s tweets to '
+                              'the database for %s.' %
                               (result['added'],
                                result['total'],
-                               result['search']))
+                               result['search'],
+                               game.gameid))
 
         # Collection process for live or upcoming games
         if game.state in ['upcoming', 'starting', 'live']:
@@ -251,10 +253,11 @@ class Collector:
                         result = self.api.search(hashtag)
 
                         # Log collection update
-                        self.log.info('Added %s of %s tweets to the '
+                        self.log.info('Added %s of %s %s tweets to the '
                                       'database for %s.' % (result['added'],
                                                             result['total'],
-                                                            result['search']))
+                                                            result['search'],
+                                                            game.gameid))
                     except:
                         pass
 
