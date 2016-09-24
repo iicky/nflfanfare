@@ -7,8 +7,13 @@ import pandas as pd
 from nflfanfare import stats
 
 
-@app.route('/', methods=['GET'])
+@app.route('/')
 def home():
+    return ''
+
+
+@app.route('/schedule', methods=['GET'])
+def schedule():
     week = request.args.get('week')
     return render_template("tweetcount.html", week=week)
 
