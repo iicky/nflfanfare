@@ -131,10 +131,6 @@ class API:
                               'Waiting %s seconds.' % delta.total_seconds())
                 time.sleep(delta.total_seconds())
 
-            page += 1
-            self.log.info('Completed page %s for %s [%s/%s]' %
-                          (total, search, added, total))
-
         # Return statistics
         return {'search': search,
                 'added': added,
@@ -259,7 +255,10 @@ class Collector:
                                    result['search'],
                                    game.gameid))
             except:
-                pass
+                log.error('Unknown error: %s line %s: %s' %
+                          (sys.exc_info()[0],
+                           sys.exc_info()[2].tb_lineno,
+                           sys.exc_info()[1]))
 
             finally:
                 # Mark game as finished
