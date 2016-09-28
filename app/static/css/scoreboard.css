@@ -65,7 +65,7 @@
 
 .boardtimetext {
 	fill: gray;
-	font-size: 10px;
+	font-size: 13px;
 	text-anchor: middle;
 	alignment-baseline: top;
 	font-family: "FontAwesome";
@@ -74,7 +74,7 @@
 
 .boardplaytext {
 	fill: black;
-	font-size: 10px;
+	font-size: 13px;
 	text-anchor: middle;
 	alignment-baseline: top;
 	font-family: "FontAwesome";
