@@ -106,7 +106,7 @@ class API:
         quota = self._quota('/search/tweets')
 
         # Added counter
-        page, added, total = 0, 0, 0
+        added, total = 0, 0
 
         for item in result.get_iterator():
 
@@ -133,7 +133,7 @@ class API:
 
             page += 1
             self.log.info('Completed page %s for %s [%s/%s]' %
-                          (page, search, added, total))
+                          (total, search, added, total))
 
         # Return statistics
         return {'search': search,
@@ -157,8 +157,27 @@ class Collector:
             The API pager can collect tweets up to 7 days old.
         '''
         games = ff.games.games('recent')
-        for game in games.gameid:
-            self.collect_game(game)
+
+        # Find list of games that are already being monitored
+        locked = ff.db.games.find({'twitter': {'$exists': True}}, {'_id': 1})
+        locked = [_['_id'] for _ in list(locked)]
+
+        if not games.empty:
+
+            # Iterate through games
+            for game in games.gameid:
+                # Check if game is not already updating
+                if game not in locked:
+                    subprocess.Popen(['python',
+                                      (ff.sec.helper_path +
+                                       'monitor_tweets.py'),
+                                      '--gameid',
+                                      game],
+                                     stdin=None,
+                                     stdout=None,
+                                     stderr=None,
+                                     close_fds=True)
+            sys.exit(1)
 
     def collect_live(self):
         ''' Collects tweets from live games using the API search.
@@ -209,29 +228,45 @@ class Collector:
         # Collection process for recent game
         if game.state == 'recent':
 
-            # Teams hashtag pool
-            hashtags = []
-            if game.hometweets < 8000:
-                hashtags += hometeam.hashtags
-            if game.awaytweets < 8000:
-                hashtags += awayteam.hashtags
+            try:
+                # Mark game as being scraped
+                ff.db.games.update_one({'_id': game.gameid},
+                                       {'$set': {'twitter': True}})
 
-            for hashtag in hashtags:
+                # Teams hashtag pool
+                hashtags = []
+                if game.hometweets < 8000:
+                    hashtags += hometeam.hashtags
+                if game.awaytweets < 8000:
+                    hashtags += awayteam.hashtags
 
-                # Log hashtag starting
-                self.log.info('Starting %s collection for %s' %
-                              (hashtag, game.gameid))
+                for hashtag in hashtags:
 
-                # Search for hashtag tweets
-                result = self.api.pager(hashtag, game.pregame, game.postgame)
+                    # Log hashtag starting
+                    self.log.info('Starting %s collection for %s' %
+                                  (hashtag, game.gameid))
 
-                # Log tweet page update
-                self.log.info('Added %s of %s %s tweets to '
-                              'the database for %s.' %
-                              (result['added'],
-                               result['total'],
-                               result['search'],
-                               game.gameid))
+                    # Search for hashtag tweets
+                    result = self.api.pager(hashtag,
+                                            game.pregame,
+                                            game.postgame)
+
+                    # Log tweet page update
+                    self.log.info('Added %s of %s %s tweets to '
+                                  'the database for %s.' %
+                                  (result['added'],
+                                   result['total'],
+                                   result['search'],
+                                   game.gameid))
+            except:
+                pass
+
+            finally:
+                # Mark game as finished
+                ff.db.games.update_one({'_id': gameid},
+                                       {'$unset': {'twitter': ''}})
+                self.log.info('Stopping tweet collection for game %s.'
+                              % gameid)
 
         # Collection process for live or upcoming games
         if game.state in ['upcoming', 'starting', 'live']:
