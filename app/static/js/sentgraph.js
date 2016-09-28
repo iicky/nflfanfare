@@ -20,8 +20,6 @@ function drawSentGraph(d){
         .attr("transform",
               "translate(" + margin.left + "," + margin.top + ")");
 
-    //------------------------------------------
-    // Axis definitions
     var x = d3.time.scale().range([0, width]);
     var y = d3.scale.linear().range([height, 0]);
 
@@ -30,6 +28,25 @@ function drawSentGraph(d){
                        function(d) { return d.gametime.$date; }));
     y.domain([-1, 1]);
 
+    //------------------------------------------
+    // Pregame and postgame shading definitions
+    var firstplay = d.plays[0];
+    var lastplay = d.plays[d.plays.length-1]
+
+
+    var pregame = svg.append("rect")
+                     .attr("class", "prepostbox")
+                     .attr("width", x(firstplay.collected_time.$date))
+                     .attr("height", height);
+
+    var postgame = svg.append("rect")
+                      .attr("class", "prepostbox")
+                      .attr("width", width - x(lastplay.collected_time.$date))
+                      .attr("height", height)
+                      .attr("x", x(lastplay.collected_time.$date));
+
+    //------------------------------------------
+    // Axis definitions
     var xAxis = d3.svg.axis().scale(x).ticks(0)
                   .orient("middle")
                   .outerTickSize(0);
