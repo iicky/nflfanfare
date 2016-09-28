@@ -126,8 +126,14 @@ class Game:
         # Check to see if game has tweets and update count
         if tweets:
             df = pd.DataFrame(tweets)
-            hometweets = int(df[df._id == self.hometeam]['count'])
-            awaytweets = int(df[df._id == self.awayteam]['count'])
+
+            home = df[df._id == self.hometeam]
+            if not home.empty:
+                hometweets = int(home['count'])
+
+            away = df[df._id == self.awayteam]
+            if not away.empty:
+                awaytweets = int(away['count'])
 
         return hometweets, awaytweets
 
