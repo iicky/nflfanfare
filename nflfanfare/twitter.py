@@ -214,6 +214,10 @@ class Collector:
 
             for hashtag in hashtags:
 
+                # Log hashtag starting
+                self.log.info('Starting %s collection for %s' %
+                              (hashtag, game.gameid))
+
                 # Search for hashtag tweets
                 result = self.api.pager(hashtag, game.pregame, game.postgame)
 
