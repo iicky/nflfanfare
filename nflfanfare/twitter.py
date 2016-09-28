@@ -106,7 +106,7 @@ class API:
         quota = self._quota('/search/tweets')
 
         # Added counter
-        added, total = 0, 0
+        page, added, total = 0, 0, 0
 
         for item in result.get_iterator():
 
@@ -130,6 +130,10 @@ class API:
                 self.log.warn('Quota reached for search/tweets. '
                               'Waiting %s seconds.' % delta.total_seconds())
                 time.sleep(delta.total_seconds())
+
+            page += 1
+            self.log.info('Completed page %s for %s [%s/%s]' %
+                          (page, search, added, total))
 
         # Return statistics
         return {'search': search,
