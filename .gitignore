@@ -1,7 +1,6 @@
+*.png
 
 *.pyc
-
-*.png
 
 class.py
 
@@ -25,69 +24,16 @@ manual.py
 
 *.bkr
 
-SQL/tweets_view.csv
-
 app/templates/scrolltest.html.old
 
 app/templates/scrolltest.test
 
-manualr.py
 
 timeshift.js
 
-.ipynb_checkpoints/Scraping-checkpoint.ipynb
-
-Scraping.ipynb
-
-mysql_to_mongo.py
-
-team_test.py
-
 secrets.py
 
-*.svg
-
-sent_fix.py
-
-manualbulk.py
-
-manualbulkteam.py
-
-SQL/.DS_Store
-
-nflfanfare/.DS_Store
-
-app/static/js/.DS_Store
-
-app/.DS_Store
-
-.DS_Store
-
-SQL/dump/NFL/games.bson
-
-SQL/dump/NFL/tweets.metadata.json
-
-SQL/dump/NFL/tweets.bson
-
-SQL/dump/NFL/teams.metadata.json
-
-SQL/dump/NFL/teams.bson
-
-SQL/dump/NFL/system.indexes.bson
-
-SQL/dump/NFL/games.metadata.json
-
-SQL/dump/NFL/teamtweets.bson
-
-SQL/dump/NFL/teamtweets.metadata.json
-
-.ipynb_checkpoints/NFLFanfare 2016-checkpoint.ipynb
-
-NFLFanfare 2016.ipynb
-
-nflfanfare.log
-
-logger.conf
+*.DS_Store
 
 *.log
 
